@@ -1,0 +1,63 @@
+@import './base.css';
+@import './theme-overrides.css';
+
+#app {
+  font-weight: normal;
+}
+
+.workspace-view {
+  display: grid;
+  gap: 20px;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.view-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--se-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.view-heading h1 {
+  margin: 0;
+  color: var(--se-text);
+  font-size: 28px;
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.empty-panel {
+  min-height: 360px;
+  padding: 28px;
+  border: 1px solid var(--se-border);
+  border-radius: 8px;
+  background: var(--se-surface);
+  box-shadow: 0 16px 40px rgba(38, 57, 47, 0.06);
+}
+
+.empty-panel h2 {
+  margin: 0 0 8px;
+  color: var(--se-text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.empty-panel p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--se-muted);
+}
+
+@media (max-width: 720px) {
+  .view-heading {
+    flex-direction: column;
+  }
+}
