@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { ChatDotRound, Collection, Expand, Fold } from '@element-plus/icons-vue'
+import {
+  ChatDotRound,
+  Collection,
+  Delete,
+  Expand,
+  Fold,
+  FolderOpened,
+  Star,
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const collapsed = ref(false)
@@ -42,13 +50,38 @@ const sidebarWidth = computed(() => (collapsed.value ? '72px' : '268px'))
 
       <section class="nav-section library-section">
         <p v-show="!collapsed" class="section-label">文献库</p>
-        <RouterLink class="nav-item" :class="{ active: route.name === 'library' }" to="/library">
+        <RouterLink
+          class="nav-item"
+          :class="{ active: route.name === 'library' }"
+          to="/library"
+        >
           <el-icon><Collection /></el-icon>
           <span v-show="!collapsed">文献库</span>
         </RouterLink>
-        <div v-show="!collapsed" class="section-note">
-          后续放置论文列表、标签、解析状态和筛选入口。
-        </div>
+        <RouterLink
+          class="nav-item nav-subitem"
+          :class="{ active: route.name === 'library-folders' }"
+          :to="{ name: 'library-folders' }"
+        >
+          <el-icon><FolderOpened /></el-icon>
+          <span v-show="!collapsed">文件夹管理</span>
+        </RouterLink>
+        <RouterLink
+          class="nav-item nav-subitem"
+          :class="{ active: route.name === 'library-favorites' }"
+          :to="{ name: 'library-favorites' }"
+        >
+          <el-icon><Star /></el-icon>
+          <span v-show="!collapsed">我的收藏</span>
+        </RouterLink>
+        <RouterLink
+          class="nav-item nav-subitem"
+          :class="{ active: route.name === 'library-trash' }"
+          :to="{ name: 'library-trash' }"
+        >
+          <el-icon><Delete /></el-icon>
+          <span v-show="!collapsed">回收站</span>
+        </RouterLink>
       </section>
     </el-scrollbar>
   </aside>
@@ -155,11 +188,13 @@ const sidebarWidth = computed(() => (collapsed.value ? '72px' : '268px'))
   font-size: 18px;
 }
 
-.section-note {
-  margin: 10px 8px 0;
-  color: #817768;
-  font-size: 12px;
-  line-height: 1.55;
+.nav-subitem {
+  margin-top: 6px;
+  color: #526056;
+}
+
+.nav-subitem .el-icon {
+  font-size: 17px;
 }
 
 .is-collapsed .sidebar-header {

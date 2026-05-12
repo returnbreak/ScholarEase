@@ -7,6 +7,8 @@ Qdrant、Elasticsearch、Redis 分别承担向量索引、BM25 文本索引和�
 ## 1. 设计目标
 
 - 支持从 Zotero 同步论文条目、PDF 附件和标签。
+- 支持用户本地上传 PDF，写入 MinIO 后再同步到 Zotero。
+- 支持 MinIO 保存原始 PDF 和 MinerU `full.md`、`content_list_v2.json` 解析产物。
 - 支持 MinerU API 解析后的章节、段落、表格、参考文献、页码等结构化结果落库。
 - 支持 Crossref / OpenAlex 补全 DOI、期刊、出版社、卷期页、引用数、开放获取链接、学科概念和引用关系。
 - 支持 section-aware chunk，并为每个 chunk 保留 paper、section、page、paragraph、neighbor chunk 等引用来源信息。
@@ -31,7 +33,7 @@ CREATE DATABASE IF NOT EXISTS scholarease
 - 状态字段：使用 `VARCHAR(32)`，避免 MySQL `ENUM` 后续扩展不便。
 - JSON 字段：用于外部 API 原始响应、MinerU 原始结构、作者列表、标签、概念等半结构化数据。
 - 软删除：MVP 暂不强制全表软删除；业务删除优先通过状态字段表达。
-- 文件存储：PDF 主文件仍由 Zotero 管理，MySQL 只记录路径、attachment key、hash 和解析结果路径。
+- 文件存储：ScholarEase 内部以 MinIO 保存原始 PDF 和 MinerU 产物，Zotero 作为双向同步的文献管理端；MySQL 只记录 Zotero 映射、MinIO 对象地址、hash、大小、同步状态和解析状态。
 
 ### 2.2 通用字段
 
@@ -94,12 +96,31 @@ CANCELED
 RETRYING
 ```
 
+`paper_attachments.sync_status`：
+
+```text
+PENDING
+SYNCED
+SYNCING
+SYNC_CONFLICT
+FAILED
+```
+
+`paper_artifacts.artifact_type`：
+
+```text
+ORIGINAL_PDF
+MINERU_FULL_MD
+MINERU_CONTENT_LIST_V2_JSON
+```
+
 ## 3. 核心 ER 关系
 
 ```mermaid
 erDiagram
     papers ||--o{ paper_authors : has
     papers ||--o{ paper_attachments : has
+    papers ||--o{ paper_artifacts : has
     papers ||--o{ paper_external_ids : has
     papers ||--o{ paper_concepts : has
     papers ||--o{ sections : contains
@@ -128,7 +149,8 @@ erDiagram
 |---|---|
 | `papers` | 论文主表，保存 Zotero 映射、核心元数据和处理状态 |
 | `paper_authors` | 论文作者列表，支持作者检索和展示顺序 |
-| `paper_attachments` | Zotero PDF 附件、本地路径、hash、解析结果路径 |
+| `paper_attachments` | PDF 附件记录，保存 Zotero attachment 与 MinIO 原始 PDF 对象的映射 |
+| `paper_artifacts` | 文件产物记录，保存原始 PDF、MinerU `full.md`、MinerU `content_list_v2.json` 等 MinIO 对象 |
 | `paper_external_ids` | DOI、OpenAlex、Crossref、arXiv 等外部标识映射 |
 | `paper_concepts` | OpenAlex concepts / 学科标签 |
 | `sections` | MinerU 解析得到的章节树 |
@@ -187,7 +209,8 @@ CREATE TABLE papers (
   source_priority VARCHAR(32) NOT NULL DEFAULT 'ZOTERO' COMMENT '主元数据来源',
 
   pdf_attachment_key VARCHAR(64) NULL COMMENT '当前主 PDF attachment key',
-  pdf_path VARCHAR(1024) NULL COMMENT '当前主 PDF 本地路径',
+  pdf_storage_bucket VARCHAR(128) NULL COMMENT '当前主 PDF MinIO bucket 快照',
+  pdf_storage_object_key VARCHAR(1024) NULL COMMENT '当前主 PDF MinIO object key 快照',
   pdf_content_hash CHAR(64) NULL COMMENT 'PDF sha256',
 
   parse_status VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '解析状态',
@@ -248,15 +271,24 @@ CREATE TABLE paper_attachments (
   zotero_version BIGINT UNSIGNED NULL COMMENT 'Zotero attachment version',
   attachment_type VARCHAR(64) NOT NULL DEFAULT 'PDF' COMMENT '附件类型',
   file_name VARCHAR(512) NULL COMMENT '文件名',
-  local_path VARCHAR(1024) NULL COMMENT '本地路径',
-  remote_url VARCHAR(1024) NULL COMMENT '远程下载链接',
-  content_hash CHAR(64) NULL COMMENT 'sha256',
+  local_path VARCHAR(1024) NULL COMMENT '导入时的本地路径快照，仅用于排查',
+  remote_url VARCHAR(1024) NULL COMMENT 'Zotero 或开放获取远程下载链接',
+
+  storage_bucket VARCHAR(128) NOT NULL COMMENT 'MinIO bucket',
+  storage_object_key VARCHAR(1024) NOT NULL COMMENT 'MinIO object key',
+  storage_etag VARCHAR(255) NULL COMMENT 'MinIO etag',
+  storage_version_id VARCHAR(255) NULL COMMENT 'MinIO version id，可选',
+  content_hash CHAR(64) NOT NULL COMMENT 'PDF sha256',
   file_size_bytes BIGINT UNSIGNED NULL COMMENT '文件大小',
+  mime_type VARCHAR(128) NOT NULL DEFAULT 'application/pdf' COMMENT 'MIME 类型',
   page_count INT UNSIGNED NULL COMMENT '页数',
   is_primary TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否主 PDF',
 
-  mineru_result_path VARCHAR(1024) NULL COMMENT 'MinerU 结果目录或 JSON 路径',
-  mineru_raw_json LONGTEXT NULL COMMENT 'MinerU 原始 JSON，可选',
+  import_source VARCHAR(64) NOT NULL DEFAULT 'ZOTERO_SYNC' COMMENT 'ZOTERO_SYNC/LOCAL_UPLOAD/MANUAL_IMPORT',
+  sync_status VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/SYNCED/SYNCING/SYNC_CONFLICT/FAILED',
+  last_synced_at DATETIME(3) NULL COMMENT '最近 Zotero 与 MinIO 同步完成时间',
+  sync_error_message TEXT NULL COMMENT '同步失败原因',
+
   mineru_version VARCHAR(128) NULL COMMENT 'MinerU 版本或 API 版本',
   parse_status VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '附件解析状态',
   parsed_at DATETIME(3) NULL COMMENT '解析完成时间',
@@ -266,15 +298,59 @@ CREATE TABLE paper_attachments (
 
   PRIMARY KEY (attachment_id),
   UNIQUE KEY uk_attachment_zotero (zotero_attachment_key),
+  UNIQUE KEY uk_attachment_object (storage_bucket, storage_object_key),
   KEY idx_attachment_paper (paper_id),
   KEY idx_attachment_hash (content_hash),
+  KEY idx_attachment_sync_status (sync_status),
   CONSTRAINT fk_attachments_paper
     FOREIGN KEY (paper_id) REFERENCES papers (paper_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='论文附件表';
 ```
 
-### 5.4 外部标识表
+说明：
+
+- `paper_attachments` 只描述 PDF 附件本体和同步状态。
+- MinerU 输出文件不放在 `paper_attachments` 中，统一放入 `paper_artifacts`。
+- `content_hash` 是判断是否需要重新解析、重新索引、同步到 Zotero 的核心依据。
+
+### 5.4 文件产物表
+
+```sql
+CREATE TABLE paper_artifacts (
+  artifact_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '文件产物ID',
+  paper_id BIGINT UNSIGNED NOT NULL COMMENT '论文ID',
+  attachment_id BIGINT UNSIGNED NULL COMMENT '来源附件ID',
+  artifact_type VARCHAR(64) NOT NULL COMMENT 'ORIGINAL_PDF/MINERU_FULL_MD/MINERU_CONTENT_LIST_V2_JSON',
+  file_name VARCHAR(512) NULL COMMENT '文件名',
+  storage_bucket VARCHAR(128) NOT NULL COMMENT 'MinIO bucket',
+  storage_object_key VARCHAR(1024) NOT NULL COMMENT 'MinIO object key',
+  storage_etag VARCHAR(255) NULL COMMENT 'MinIO etag',
+  storage_version_id VARCHAR(255) NULL COMMENT 'MinIO version id，可选',
+  content_hash CHAR(64) NULL COMMENT 'sha256',
+  file_size_bytes BIGINT UNSIGNED NULL COMMENT '文件大小',
+  mime_type VARCHAR(128) NULL COMMENT 'MIME 类型',
+  source VARCHAR(64) NOT NULL DEFAULT 'SYSTEM' COMMENT 'LOCAL_UPLOAD/ZOTERO_SYNC/MINERU/SYSTEM',
+  producer_version VARCHAR(128) NULL COMMENT '生成工具版本，如 MinerU API 版本',
+  metadata_json JSON NULL COMMENT '页数、解析任务、模型参数等补充信息',
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+
+  PRIMARY KEY (artifact_id),
+  UNIQUE KEY uk_artifact_object (storage_bucket, storage_object_key),
+  UNIQUE KEY uk_artifact_paper_type_hash (paper_id, artifact_type, content_hash),
+  KEY idx_artifact_paper_type (paper_id, artifact_type),
+  KEY idx_artifact_attachment (attachment_id),
+  CONSTRAINT fk_artifacts_paper
+    FOREIGN KEY (paper_id) REFERENCES papers (paper_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_artifacts_attachment
+    FOREIGN KEY (attachment_id) REFERENCES paper_attachments (attachment_id)
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='论文文件产物表';
+```
+
+### 5.5 外部标识表
 
 ```sql
 CREATE TABLE paper_external_ids (
@@ -298,7 +374,7 @@ CREATE TABLE paper_external_ids (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='论文外部标识表';
 ```
 
-### 5.5 学科概念表
+### 5.6 学科概念表
 
 ```sql
 CREATE TABLE paper_concepts (
@@ -321,7 +397,7 @@ CREATE TABLE paper_concepts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='论文学科概念表';
 ```
 
-### 5.6 章节表
+### 5.7 章节表
 
 ```sql
 CREATE TABLE sections (
@@ -355,7 +431,7 @@ CREATE TABLE sections (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='论文章节表';
 ```
 
-### 5.7 Chunk 表
+### 5.8 Chunk 表
 
 ```sql
 CREATE TABLE chunks (
@@ -420,7 +496,7 @@ CREATE TABLE chunks (
 - `context_text` 是用于索引的增强文本，可包含论文标题、年份、venue、DOI、section path、page 等上下文前缀。
 - `qdrant_point_id` 和 `elasticsearch_doc_id` 用于跨系统排查索引一致性。
 
-### 5.8 参考文献表
+### 5.9 参考文献表
 
 ```sql
 CREATE TABLE `references` (
@@ -456,7 +532,7 @@ CREATE TABLE `references` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='参考文献表';
 ```
 
-### 5.9 Chunk 引文出现表
+### 5.10 Chunk 引文出现表
 
 ```sql
 CREATE TABLE chunk_references (
@@ -485,7 +561,7 @@ CREATE TABLE chunk_references (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='chunk 内引文出现表';
 ```
 
-### 5.10 引用关系表
+### 5.11 引用关系表
 
 ```sql
 CREATE TABLE citations (
@@ -515,7 +591,7 @@ CREATE TABLE citations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='论文引用关系表';
 ```
 
-### 5.11 Ingestion 任务表
+### 5.12 Ingestion 任务表
 
 ```sql
 CREATE TABLE ingestion_jobs (
@@ -551,7 +627,7 @@ CREATE TABLE ingestion_jobs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='导入处理任务表';
 ```
 
-### 5.12 Ingestion 任务步骤表
+### 5.13 Ingestion 任务步骤表
 
 ```sql
 CREATE TABLE ingestion_job_steps (
@@ -578,7 +654,7 @@ CREATE TABLE ingestion_job_steps (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='导入处理任务步骤表';
 ```
 
-### 5.13 检索日志表
+### 5.14 检索日志表
 
 ```sql
 CREATE TABLE retrieval_logs (
@@ -608,7 +684,7 @@ CREATE TABLE retrieval_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='检索请求日志表';
 ```
 
-### 5.14 检索召回明细表
+### 5.15 检索召回明细表
 
 ```sql
 CREATE TABLE retrieval_log_items (
@@ -646,7 +722,7 @@ CREATE TABLE retrieval_log_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='检索召回明细表';
 ```
 
-### 5.15 问答会话表
+### 5.16 问答会话表
 
 ```sql
 CREATE TABLE qa_sessions (
@@ -668,7 +744,7 @@ CREATE TABLE qa_sessions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='问答会话表';
 ```
 
-### 5.16 问答消息表
+### 5.17 问答消息表
 
 ```sql
 CREATE TABLE qa_messages (
@@ -697,7 +773,7 @@ CREATE TABLE qa_messages (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='问答消息表';
 ```
 
-### 5.17 答案引用表
+### 5.18 答案引用表
 
 ```sql
 CREATE TABLE answer_citations (
@@ -735,7 +811,7 @@ CREATE TABLE answer_citations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='答案引用来源表';
 ```
 
-### 5.18 评估集表
+### 5.19 评估集表
 
 ```sql
 CREATE TABLE evaluation_sets (
@@ -751,7 +827,7 @@ CREATE TABLE evaluation_sets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='评估集表';
 ```
 
-### 5.19 评估问题表
+### 5.20 评估问题表
 
 ```sql
 CREATE TABLE evaluation_questions (
@@ -774,7 +850,7 @@ CREATE TABLE evaluation_questions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='评估问题表';
 ```
 
-### 5.20 评估运行表
+### 5.21 评估运行表
 
 ```sql
 CREATE TABLE evaluation_runs (
@@ -944,9 +1020,12 @@ Elasticsearch index：`scholarease_chunks`
 
 ```text
 Zotero item
+  -> read or download PDF attachment
+  -> write original PDF to MinIO
   -> upsert papers
   -> upsert paper_authors
   -> upsert paper_attachments
+  -> upsert paper_artifacts(ORIGINAL_PDF)
   -> create ingestion_jobs(PARSE_PDF) when new or changed PDF
 ```
 
@@ -955,19 +1034,35 @@ Zotero item
 - `paper_attachments.content_hash` 变化。
 - `paper_attachments.zotero_version` 变化。
 - 用户手动触发 reparse。
+- Zotero 和 MinIO 两端 hash 不一致且无法自动判定来源时，标记 `SYNC_CONFLICT`。
 
-### 8.2 MinerU 解析
+### 8.2 本地上传
+
+```text
+Local PDF upload
+  -> write original PDF to MinIO
+  -> upsert papers / paper_attachments
+  -> upsert paper_artifacts(ORIGINAL_PDF)
+  -> create or update Zotero item / attachment
+  -> create ingestion_jobs(PARSE_PDF)
+```
+
+### 8.3 MinerU 解析
 
 ```text
 paper_attachments
+  -> read PDF from MinIO
   -> call MinerU API
-  -> update paper_attachments.mineru_result_path / mineru_raw_json
+  -> write full.md to MinIO
+  -> write content_list_v2.json to MinIO
+  -> upsert paper_artifacts(MINERU_FULL_MD)
+  -> upsert paper_artifacts(MINERU_CONTENT_LIST_V2_JSON)
   -> write sections
   -> write references
   -> update papers.parse_status
 ```
 
-### 8.3 元数据补全
+### 8.4 元数据补全
 
 ```text
 papers DOI / title / authors / year
@@ -979,7 +1074,7 @@ papers DOI / title / authors / year
   -> write citations
 ```
 
-### 8.4 Chunk 与索引
+### 8.5 Chunk 与索引
 
 ```text
 sections + paragraph/table/caption
@@ -1000,6 +1095,7 @@ MVP 论文问答阶段建议先实现：
 - `papers`
 - `paper_authors`
 - `paper_attachments`
+- `paper_artifacts`
 - `paper_external_ids`
 - `sections`
 - `chunks`
@@ -1046,10 +1142,11 @@ MVP 论文问答阶段建议先实现：
 
 ```text
 V1__create_paper_core_tables.sql
-V2__create_document_structure_tables.sql
-V3__create_ingestion_job_tables.sql
-V4__create_retrieval_and_qa_tables.sql
-V5__create_evaluation_tables.sql
+V2__create_document_artifact_tables.sql
+V3__create_document_structure_tables.sql
+V4__create_ingestion_job_tables.sql
+V5__create_retrieval_and_qa_tables.sql
+V6__create_evaluation_tables.sql
 ```
 
 外键顺序需要先建 `papers`，再建依赖 `papers` 的子表，最后建日志、问答和评估表。

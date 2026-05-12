@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ChatAssistantView from '@/views/ChatAssistantView.vue'
+import BlankLibraryPanelView from '@/views/BlankLibraryPanelView.vue'
 import LibraryView from '@/views/LibraryView.vue'
 
 // 路由表定义“地址 -> 页面组件”的对应关系。
@@ -25,6 +26,30 @@ const router = createRouter({
       component: LibraryView,
       meta: {
         title: '文献库',
+      },
+    },
+    {
+      path: '/library/folders',
+      name: 'library-folders',
+      component: BlankLibraryPanelView,
+      meta: {
+        title: '文件夹管理',
+      },
+    },
+    {
+      path: '/library/favorites',
+      name: 'library-favorites',
+      component: BlankLibraryPanelView,
+      meta: {
+        title: '我的收藏',
+      },
+    },
+    {
+      path: '/library/trash',
+      name: 'library-trash',
+      component: BlankLibraryPanelView,
+      meta: {
+        title: '回收站',
       },
     },
   ],
