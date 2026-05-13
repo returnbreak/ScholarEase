@@ -22,19 +22,22 @@ import {
   type PaperSummary,
   uploadDocument,
 } from '@/api/documents'
+import { calculateFileMd5 } from '@/utils/md5'
 
 type UploadPreview = {
-  // 本地预览卡片 ID。不能只用文件名，因为用户可能重复选择同名文件。
+  // 本地预览卡片 ID。按你的要求，这里使用“文件内容 MD5”，相同内容会得到相同 ID。
   id: string
   // 保留原始 File 对象，真正点击“上传 PDF”时会交给 FormData。
   file: File
+  // 前端先算出的文件内容 MD5，可用于本地去重，也和后端 paper_md5 语义对齐。
+  paperMd5: string
   fileName: string
-  fileType: 'PDF' | 'DOC' | 'DOCX'
+  fileType: 'PDF'
   sizeLabel: string
   // objectUrl 用于 PDF <object> 预览，组件卸载或移除卡片时必须释放。
   objectUrl: string
-  // ready：PDF 等待上传；blocked：DOC/DOCX 仅预览；uploading/success/failed：接口调用状态。
-  uploadStatus: 'ready' | 'blocked' | 'uploading' | 'success' | 'failed'
+  // ready：等待上传；uploading/success/failed：接口调用状态。
+  uploadStatus: 'ready' | 'uploading' | 'success' | 'failed'
   // 每个文件自己的状态文案，避免批量上传时只能看到全局提示。
   message: string
 }
@@ -55,7 +58,7 @@ const pageSize = ref(10)
 const totalDocuments = ref(0)
 const hasNextPage = ref(false)
 
-// 只允许 PDF 进入上传队列；DOC/DOCX 按产品约定保留本地预览，但不会提交后端。
+// 只允许 PDF 进入上传队列；其它类型文件在选择阶段就直接忽略，不生成预览，也不进入后续逻辑。
 const uploadablePreviews = computed(() =>
   uploadPreviews.value.filter((preview) => preview.fileType === 'PDF' && preview.uploadStatus !== 'success'),
 )
@@ -101,7 +104,7 @@ function openFileDialog() {
 function handleFileInputChange(event: Event) {
   const input = event.target as HTMLInputElement
   // 将选择的文件列表传递给通用的处理函数
-  handleFiles(input.files)
+  void handleFiles(input.files)
   // 清空 input 的值，确保选择同一个文件时能再次触发 change 事件
   input.value = ''
 }
@@ -111,77 +114,61 @@ function handleDrop(event: DragEvent) {
   // 结束拖拽状态
   isDragging.value = false
   // 从事件数据中获取被拖拽的文件列表并进行处理
-  handleFiles(event.dataTransfer?.files)
+  void handleFiles(event.dataTransfer?.files)
 }
 
-// 通用的文件处理逻辑，验证文件格式和大小，并生成预览数据
-function handleFiles(fileList?: FileList | null) {
+// 通用的文件处理逻辑：只处理 PDF，读取文件内容生成 MD5，并据此创建预览数据。
+async function handleFiles(fileList?: FileList | null) {
   if (!fileList?.length) {
     return
   }
 
   // 将 FileList 转换为普通数组
   const files = Array.from(fileList)
-  // 过滤出符合支持格式和大小限制的文件
-  const supportedFiles = files.filter(isSupportedFile)
-  // 计算被拒绝（不支持）的文件数量
+  // 只保留接口文档允许上传的 PDF；其它格式不做预览、不做上传、不进入状态队列。
+  const supportedFiles = files.filter(isSupportedPdf)
   const rejectedCount = files.length - supportedFiles.length
+  let duplicatedCount = 0
 
   // 为每个受支持的文件创建预览对象并添加到列表中
-  supportedFiles.forEach((file) => {
-    const fileType = getFileType(file.name)
+  for (const file of supportedFiles) {
+    const paperMd5 = await calculateFileMd5(file)
+
+    if (uploadPreviews.value.some((preview) => preview.id === paperMd5)) {
+      duplicatedCount += 1
+      continue
+    }
 
     uploadPreviews.value.push({
-      // 使用文件名、最后修改时间和 UUID 生成唯一的标识符
-      id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+      // 使用文件内容 MD5 作为唯一标识符，而不是文件名、修改时间或随机 UUID。
+      id: paperMd5,
       file,
+      paperMd5,
       fileName: file.name,
-      // 根据文件名解析文件类型 (PDF, DOC, DOCX)
-      fileType,
+      fileType: 'PDF',
       // 将文件大小格式化为更易读的字符串 (KB 或 MB)
       sizeLabel: formatFileSize(file.size),
       // 为文件创建一个可用于在浏览器中显示/访问的本地 URL 对象
       objectUrl: URL.createObjectURL(file),
-      // 后端当前只支持 PDF：PDF 标记为 ready，DOC/DOCX 标记为 blocked。
-      uploadStatus: fileType === 'PDF' ? 'ready' : 'blocked',
-      message: fileType === 'PDF' ? '等待上传' : '仅本地预览，后端暂不支持上传',
+      uploadStatus: 'ready',
+      message: '等待上传',
     })
-  })
+  }
 
-  // 汇总上传区提示：让用户一眼看到哪些文件可以上传，哪些只是本地预览。
-  const pdfCount = supportedFiles.filter((file) => getFileType(file.name) === 'PDF').length
-  const docCount = supportedFiles.length - pdfCount
-
+  // 汇总上传区提示：只展示 PDF 处理结果，其它格式按要求直接忽略。
   uploadNotice.value = [
-    `已生成 ${supportedFiles.length} 个缩略图`,
-    pdfCount ? `${pdfCount} 个 PDF 可上传` : '',
-    docCount ? `${docCount} 个文档仅预览` : '',
-    rejectedCount ? `忽略 ${rejectedCount} 个不支持或过大的文件` : '',
+    supportedFiles.length ? `已处理 ${supportedFiles.length} 个 PDF` : '',
+    duplicatedCount ? `跳过 ${duplicatedCount} 个内容重复的 PDF` : '',
+    rejectedCount ? `忽略 ${rejectedCount} 个非 PDF 或过大的文件` : '',
   ]
     .filter(Boolean)
     .join('，')
 }
 
-// 检查单个文件是否受支持：限制为 pdf/doc/docx 扩展名，且大小不超过 200MB
-function isSupportedFile(file: File) {
+// 检查单个文件是否受支持：严格限制为 PDF，且大小不超过 200MB。
+function isSupportedPdf(file: File) {
   const extension = file.name.split('.').pop()?.toLowerCase()
-  return ['pdf', 'doc', 'docx'].includes(extension ?? '') && file.size <= 200 * 1024 * 1024
-}
-
-// 根据文件名提取并标准化文件类型以供预览使用
-function getFileType(fileName: string): UploadPreview['fileType'] {
-  const extension = fileName.split('.').pop()?.toLowerCase()
-
-  if (extension === 'doc') {
-    return 'DOC'
-  }
-
-  if (extension === 'docx') {
-    return 'DOCX'
-  }
-
-  // 默认为 PDF
-  return 'PDF'
+  return extension === 'pdf' && file.size <= 200 * 1024 * 1024
 }
 
 // 将文件大小（字节）格式化为带有 KB 或 MB 单位的易读字符串
@@ -228,16 +215,19 @@ async function uploadPendingDocuments() {
     preview.message = '上传解析中'
 
     try {
-      // 接口文档中 title 可选。这里先用文件名推断标题，后端仍可在 MinerU 解析后补全。
-      const uploadedPaper = await uploadDocument({
+      // 按上传接口约定，除 PDF 文件本体外，前端提交文件名、内容 MD5、字节大小和提交时间。
+      const uploadProgress = await uploadDocument({
+        traceId: createUploadTraceId(),
         file: preview.file,
-        title: inferTitleFromFileName(preview.fileName),
-        language: 'en',
+        fileName: preview.fileName,
+        paperMd5: preview.paperMd5,
+        fileSizeBytes: preview.file.size,
+        submissionTime: new Date().toISOString(),
       })
 
       preview.uploadStatus = 'success'
-      preview.message = '上传成功'
-      ElMessage.success(`已上传：${uploadedPaper.title || preview.fileName}`)
+      preview.message = uploadProgress.parseStatus === 'PARSING' ? '已提交解析' : '上传成功'
+      ElMessage.success(`已提交解析：${uploadProgress.fileName || preview.fileName}`)
     } catch (error) {
       // API 层会把后端错误码包装为 DocumentApiError，这里转换成适合用户阅读的中文文案。
       preview.uploadStatus = 'failed'
@@ -251,9 +241,26 @@ async function uploadPendingDocuments() {
   await loadDocuments()
 }
 
-// 没有手填标题的情况下，用文件名去掉扩展名并把 _ / - 转为空格，作为上传表单的 title 兜底。
-function inferTitleFromFileName(fileName: string) {
-  return fileName.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ')
+/**
+ * 生成用于上传追踪的唯一标识符 (Trace ID)
+ * 该函数优先使用现代浏览器的原生 Crypto API 生成安全的 UUID。
+ * 如果当前环境不支持（例如非 HTTPS 环境或旧版浏览器），则降级使用“时间戳 + 随机数”的方案。
+ * 
+ * @returns {string} 返回一个不包含短横线的唯一字母数字字符串
+ */
+function createUploadTraceId() {
+  // 检查当前环境是否支持原生且安全的 crypto.randomUUID 方法
+  if (typeof crypto.randomUUID === 'function') {
+    // 生成标准的 UUID v4 (格式如: 123e4567-e89b-12d3-a456-426614174000)
+    // 使用 replaceAll 去除所有的短横线 '-'，得到一个纯粹的 32 位字符串
+    return crypto.randomUUID().replaceAll('-', '')
+  }
+
+  // 降级方案：当 crypto.randomUUID 不可用时执行
+  // Date.now().toString(36): 将当前毫秒级时间戳转换为 36 进制字符串（缩短长度并包含字母）
+  // Math.random().toString(36).slice(2, 14): 生成一个随机小数，转为 36 进制，并截掉开头的 "0."，保留后面的随机字符
+  // 将时间戳和随机字符串拼接在一起，以极大概率保证生成的 ID 是唯一的
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`
 }
 
 // 后端返回 ISO-8601 时间；列表页只展示日期部分，和当前表格“上传日期”列保持一致。
@@ -321,7 +328,7 @@ onBeforeUnmount(() => {
         ref="fileInputRef"
         class="file-input"
         type="file"
-        accept=".pdf,.doc,.docx"
+        accept=".pdf,application/pdf"
         multiple
         @change="handleFileInputChange"
       />
@@ -354,7 +361,7 @@ onBeforeUnmount(() => {
         <h2>点击或拖拽文件到此处上传</h2>
         
         <!-- 支持的格式与文件大小限制说明 -->
-        <p>PDF 可上传解析，DOC / DOCX 仅用于本地预览，单个文件最大 200MB</p>
+        <p>仅支持 PDF，单个文件最大 200MB</p>
         
         <!-- 
           显式的上传按钮 
@@ -389,26 +396,15 @@ onBeforeUnmount(() => {
             class="preview-card"
           >
             <div class="thumbnail-shell" :class="preview.fileType.toLowerCase()">
-              <object
-                v-if="preview.fileType === 'PDF'"
-                class="pdf-thumbnail"
-                :data="preview.objectUrl"
-                type="application/pdf"
-                aria-label="PDF 缩略图"
-              >
+              <object class="pdf-thumbnail" :data="preview.objectUrl" type="application/pdf" aria-label="PDF 缩略图">
                 <span>PDF</span>
               </object>
-              <div v-else class="doc-thumbnail" aria-hidden="true">
-                <span>{{ preview.fileType }}</span>
-                <i></i>
-                <i></i>
-                <i></i>
-              </div>
             </div>
 
             <div class="preview-meta">
               <strong :title="preview.fileName">{{ preview.fileName }}</strong>
               <span>{{ preview.fileType }} · {{ preview.sizeLabel }}</span>
+              <small :title="preview.paperMd5">MD5 {{ preview.paperMd5 }}</small>
               <em class="upload-status" :class="preview.uploadStatus">{{ preview.message }}</em>
             </div>
 
@@ -679,36 +675,6 @@ onBeforeUnmount(() => {
   font-weight: 800;
 }
 
-.doc-thumbnail {
-  display: grid;
-  width: 82px;
-  min-height: 104px;
-  align-content: start;
-  gap: 10px;
-  padding: 14px 12px;
-  border: 1px solid #bcc9dd;
-  border-radius: 7px;
-  background: #fff;
-  box-shadow: 0 12px 22px rgba(63, 111, 189, 0.14);
-}
-
-.doc-thumbnail span {
-  color: #3f6fbd;
-  font-size: 16px;
-  font-weight: 820;
-}
-
-.doc-thumbnail i {
-  display: block;
-  height: 6px;
-  border-radius: 999px;
-  background: #d7e0ee;
-}
-
-.doc-thumbnail i:nth-child(4) {
-  width: 62%;
-}
-
 .preview-meta {
   display: grid;
   min-width: 0;
@@ -729,6 +695,14 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
+.preview-meta small {
+  overflow: hidden;
+  color: #8a8278;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .upload-status {
   overflow: hidden;
   color: #6f675b;
@@ -740,10 +714,6 @@ onBeforeUnmount(() => {
 
 .upload-status.ready {
   color: #526056;
-}
-
-.upload-status.blocked {
-  color: #9d6f20;
 }
 
 .upload-status.uploading {
@@ -885,11 +855,6 @@ onBeforeUnmount(() => {
 
 .file-badge.pdf {
   background: #c5483a;
-}
-
-.file-badge.docx {
-  background: #3f6fbd;
-  font-size: 8px;
 }
 
 .action-group {
