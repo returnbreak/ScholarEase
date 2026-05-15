@@ -45,13 +45,22 @@ class DocumentServiceImplTests {
     @Mock
     private MinerUClient minerUClient;
 
+    @Mock
+    private ZoteroImportService zoteroImportService;
+
     private DocumentServiceImpl documentService;
 
     @BeforeEach
     void setUp() {
         MinerUProperties minerUProperties = new MinerUProperties();
         minerUProperties.getPolling().setMaxAttempts(1);
-        documentService = new DocumentServiceImpl(paperMapper, progressService, minerUClient, minerUProperties);
+        documentService = new DocumentServiceImpl(
+                paperMapper,
+                progressService,
+                minerUClient,
+                minerUProperties,
+                zoteroImportService
+        );
     }
 
     @Test
@@ -68,6 +77,7 @@ class DocumentServiceImplTests {
 
         verify(progressService).recordUploadProgress(dto);
         verify(minerUClient).uploadToSignedUrl("https://signed.example/upload", PDF_BYTES);
+        verify(zoteroImportService).importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001");
         verify(progressService).updateParseStatus("trace-001", 2);
         verify(paperMapper, never()).insert(any(PaperEntity.class));
 
@@ -97,6 +107,30 @@ class DocumentServiceImplTests {
 
         verify(progressService).recordUploadProgress(dto);
         verify(progressService).updateParseStatus("trace-001", 3);
+        verify(paperMapper, never()).insert(any(PaperEntity.class));
+    }
+
+    @Test
+    void uploadDocumentMarksProgressFailedWhenZoteroWriteFailsAfterMinerUParseSucceeded() {
+        UploadDocumentDTO dto = uploadDto(PDF_MD5, (long) PDF_BYTES.length);
+        MockMultipartFile file = pdfFile();
+        when(paperMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(minerUClient.requestSignedUploadUrl("attention.pdf", "trace-001"))
+                .thenReturn(new MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
+        when(minerUClient.getBatchResult("batch-001", "trace-001"))
+                .thenReturn(new MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
+        when(zoteroImportService.importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001"))
+                .thenThrow(new BusinessException(ErrorCode.ZOTERO_WRITE_FAILED, "Zotero import failed"));
+
+        assertThatThrownBy(() -> documentService.uploadDocument(file, dto))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ZOTERO_WRITE_FAILED);
+
+        verify(progressService).recordUploadProgress(dto);
+        verify(zoteroImportService).importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001");
+        verify(progressService).updateParseStatus("trace-001", 3);
+        verify(progressService, never()).updateParseStatus("trace-001", 2);
         verify(paperMapper, never()).insert(any(PaperEntity.class));
     }
 

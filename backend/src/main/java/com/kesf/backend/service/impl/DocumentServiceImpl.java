@@ -16,6 +16,7 @@ import com.kesf.backend.exception.ErrorCode;
 import com.kesf.backend.mapper.PaperMapper;
 import com.kesf.backend.service.DocumentService;
 import com.kesf.backend.service.PaperUploadParseProgressService;
+import com.kesf.backend.service.ZoteroImportService;
 import com.kesf.backend.utils.Md5Utils;
 import com.kesf.backend.utils.MinerUClient;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final PaperUploadParseProgressService progressService;
     private final MinerUClient minerUClient;
     private final MinerUProperties minerUProperties;
+    private final ZoteroImportService zoteroImportService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -127,6 +129,11 @@ public class DocumentServiceImpl implements DocumentService {
                     file,
                     uploadDocument.getTraceId(),
                     safeFileName(uploadDocument.getFileName())
+            );
+            zoteroImportService.importParsedPaper(
+                    readFileBytes(file),
+                    safeFileName(uploadDocument.getFileName()),
+                    uploadDocument.getTraceId()
             );
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_PARSED_VALUE);
             return parseResult;

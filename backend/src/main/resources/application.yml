@@ -24,6 +24,10 @@ mineru:
   polling:
     interval: 5s
     maxAttempts: 60
+zotero:
+  enabled: true
+  baseUrl: ${ZOTERO_BASE_URL:http://127.0.0.1:23119}
+  requestTimeout: 30s
 minio:
   endpoint: http://localhost:9000
   accessKey: minioadmin

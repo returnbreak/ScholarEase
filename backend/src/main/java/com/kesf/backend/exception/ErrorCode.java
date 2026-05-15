@@ -31,6 +31,8 @@ public enum ErrorCode {
 
     MINERU_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "MinerU parse failed"),
 
+    ZOTERO_WRITE_FAILED(HttpStatus.BAD_GATEWAY, "Zotero write failed"),
+
     /**
      * 未被业务异常显式捕获的服务端未知异常。
      */
