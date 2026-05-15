@@ -29,6 +29,8 @@ public enum ErrorCode {
      */
     UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed"),
 
+    MINERU_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "MinerU parse failed"),
+
     /**
      * 未被业务异常显式捕获的服务端未知异常。
      */

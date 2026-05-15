@@ -1,9 +1,12 @@
 package com.kesf.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kesf.backend.config.MinerUProperties;
 import com.kesf.backend.dto.DuplicatePaperDataDTO;
+import com.kesf.backend.dto.PageResultDTO;
 import com.kesf.backend.dto.PaperSummaryDTO;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
@@ -14,9 +17,9 @@ import com.kesf.backend.mapper.PaperMapper;
 import com.kesf.backend.service.DocumentService;
 import com.kesf.backend.service.PaperUploadParseProgressService;
 import com.kesf.backend.utils.Md5Utils;
+import com.kesf.backend.utils.MinerUClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,53 +32,36 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * 文献服务实现类
- * 负责处理本地 PDF 文件的上传校验、MD5 计算与防篡改比对、文献查重以及上传进度的记录。
- */
 @Service
 @RequiredArgsConstructor
 public class DocumentServiceImpl implements DocumentService {
 
-    // 允许上传的最大文件大小：200MB
     private static final long MAX_FILE_SIZE_BYTES = 200L * 1024L * 1024L;
-    // 解析状态常量：解析中
-    private static final String PARSE_STATUS_PARSING = "PARSING";
+    private static final int PARSE_STATUS_PARSED_VALUE = 2;
+    private static final int PARSE_STATUS_FAILED_VALUE = 3;
+    private static final String PARSE_STATUS_PARSED = "PARSED";
+    private static final String MINERU_STATE_RUNNING = "running";
+    private static final String MINERU_STATE_DONE = "done";
+    private static final String MINERU_STATE_FAILED = "failed";
 
-    // 文献数据库操作 Mapper
     private final PaperMapper paperMapper;
-
-    // 文献上传解析进度服务
     private final PaperUploadParseProgressService progressService;
-
-    // JSON 序列化工具
+    private final MinerUClient minerUClient;
+    private final MinerUProperties minerUProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * 处理文献上传的主逻辑。
-     * 当前阶段仅创建“解析进度”记录。
-     * 真正的“文献”记录（Paper）会在后续解析确认并且文件成功持久化到 Zotero 和 MinIO 之后才被创建。
-     */
     @Override
-    @Transactional
     public UploadProgressDTO uploadDocument(MultipartFile file, UploadDocumentDTO uploadDocument) {
-        // 1. 基础校验：检查文件是否为空、是否超大、是否是合法的 PDF 文件
         validatePdfFile(file, uploadDocument);
 
-        // 2. 后端重新计算文件的 MD5 和实际大小
         String actualPaperMd5 = calculateMd5(file);
         long actualFileSizeBytes = file.getSize();
-        
-        // 3. 防篡改与完整性校验：对比客户端传来的期望值与后端实际计算的值
         validateClientMetadata(uploadDocument, actualPaperMd5, actualFileSizeBytes);
 
-        // 4. 文献查重：根据文件的 MD5 值去数据库查询是否已经上传过完全相同内容的文献
         PaperEntity duplicatePaper = paperMapper.selectOne(new LambdaQueryWrapper<PaperEntity>()
                 .eq(PaperEntity::getPaperMd5, actualPaperMd5)
                 .last("LIMIT 1"));
-                
         if (duplicatePaper != null) {
-            // 如果已存在，抛出重复异常，并将已存在文献的摘要信息放入异常的 data 属性中返回给前端展示
             throw new BusinessException(
                     ErrorCode.DUPLICATE_PAPER,
                     ErrorCode.DUPLICATE_PAPER.getMessage(),
@@ -83,16 +69,135 @@ public class DocumentServiceImpl implements DocumentService {
             );
         }
 
-        // 5. 校验通过且未重复，记录此文件的上传与解析进度
         progressService.recordUploadProgress(uploadDocument);
-        
-        // 6. 返回进度信息给前端
-        return toUploadProgress(uploadDocument, actualPaperMd5, actualFileSizeBytes);
+        MinerUParseResult parseResult = parseWithMinerU(file, uploadDocument);
+
+        return toUploadProgress(uploadDocument, actualPaperMd5, actualFileSizeBytes, parseResult);
     }
 
-    /**
-     * 校验上传的文件对象是否符合 PDF 文件的要求
-     */
+    @Override
+    public PageResultDTO<PaperSummaryDTO> listDocuments(
+            String keyword,
+            Integer year,
+            String venue,
+            Integer page,
+            Integer pageSize
+    ) {
+        int safePage = page == null || page < 1 ? 1 : page;
+        int safePageSize = pageSize == null || pageSize < 1 ? 20 : Math.min(pageSize, 100);
+
+        LambdaQueryWrapper<PaperEntity> queryWrapper = new LambdaQueryWrapper<>();
+        String trimmedKeyword = trimToNull(keyword);
+        if (trimmedKeyword != null) {
+            queryWrapper.and(wrapper -> wrapper
+                    .like(PaperEntity::getTitle, trimmedKeyword)
+                    .or()
+                    .like(PaperEntity::getFileName, trimmedKeyword)
+                    .or()
+                    .like(PaperEntity::getAuthorsJson, trimmedKeyword)
+                    .or()
+                    .like(PaperEntity::getDoi, trimmedKeyword));
+        }
+        if (year != null) {
+            queryWrapper.eq(PaperEntity::getYear, year);
+        }
+        String trimmedVenue = trimToNull(venue);
+        if (trimmedVenue != null) {
+            queryWrapper.like(PaperEntity::getVenue, trimmedVenue);
+        }
+        queryWrapper.orderByDesc(PaperEntity::getUploadTime).orderByDesc(PaperEntity::getPaperId);
+
+        Page<PaperEntity> resultPage = paperMapper.selectPage(new Page<>(safePage, safePageSize), queryWrapper);
+        List<PaperSummaryDTO> items = resultPage.getRecords().stream()
+                .map(this::toSummary)
+                .toList();
+
+        return new PageResultDTO<>(
+                items,
+                safePage,
+                safePageSize,
+                resultPage.getTotal(),
+                resultPage.getCurrent() < resultPage.getPages()
+        );
+    }
+
+    private MinerUParseResult parseWithMinerU(MultipartFile file, UploadDocumentDTO uploadDocument) {
+        try {
+            MinerUParseResult parseResult = parseByMinerU(
+                    file,
+                    uploadDocument.getTraceId(),
+                    safeFileName(uploadDocument.getFileName())
+            );
+            progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_PARSED_VALUE);
+            return parseResult;
+        } catch (BusinessException exception) {
+            progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
+            throw exception;
+        } catch (RuntimeException exception) {
+            progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
+            throw new BusinessException(ErrorCode.MINERU_PARSE_FAILED, ErrorCode.MINERU_PARSE_FAILED.getMessage());
+        }
+    }
+
+    private MinerUParseResult parseByMinerU(MultipartFile file, String traceId, String fileName) {
+        if (!minerUProperties.isEnabled()) {
+            throw minerUFailed("MinerU parsing is disabled");
+        }
+
+        byte[] fileBytes = readFileBytes(file);
+        MinerUClient.SignedUpload signedUpload = minerUClient.requestSignedUploadUrl(fileName, traceId);
+        minerUClient.uploadToSignedUrl(signedUpload.signedUrl(), fileBytes);
+
+        int maxAttempts = Math.max(1, minerUProperties.getPolling().getMaxAttempts());
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            MinerUClient.BatchFileResult result = minerUClient.getBatchResult(signedUpload.batchId(), traceId);
+            String state = result.state();
+
+            if (MINERU_STATE_DONE.equalsIgnoreCase(state)) {
+                if (!StringUtils.hasText(result.fullZipUrl())) {
+                    throw minerUFailed("MinerU finished without full_zip_url");
+                }
+                return new MinerUParseResult(signedUpload.batchId(), result.fullZipUrl());
+            }
+
+            if (MINERU_STATE_FAILED.equalsIgnoreCase(state)) {
+                throw minerUFailed(StringUtils.hasText(result.errorMessage())
+                        ? result.errorMessage()
+                        : "MinerU batch parse failed");
+            }
+
+            if (attempt < maxAttempts) {
+                sleepBeforeNextMinerUPoll(state);
+            }
+        }
+
+        throw minerUFailed("MinerU batch parse timed out");
+    }
+
+    private byte[] readFileBytes(MultipartFile file) {
+        try {
+            return file.getBytes();
+        } catch (IOException exception) {
+            throw new BusinessException(ErrorCode.UPLOAD_FAILED, "Failed to read uploaded file");
+        }
+    }
+
+    private void sleepBeforeNextMinerUPoll(String state) {
+        if (!MINERU_STATE_RUNNING.equalsIgnoreCase(state)) {
+            return;
+        }
+        try {
+            Thread.sleep(minerUProperties.getPolling().getInterval().toMillis());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw minerUFailed("MinerU polling interrupted");
+        }
+    }
+
+    private BusinessException minerUFailed(String message) {
+        return new BusinessException(ErrorCode.MINERU_PARSE_FAILED, message);
+    }
+
     private void validatePdfFile(MultipartFile file, UploadDocumentDTO uploadDocument) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_FILE_TYPE);
@@ -103,8 +208,6 @@ public class DocumentServiceImpl implements DocumentService {
 
         String fileName = uploadDocument == null ? null : uploadDocument.getFileName();
         String contentType = file.getContentType();
-        
-        // 校验文件名后缀（如果存在）以及文件的 Content-Type
         boolean pdfName = StringUtils.hasText(fileName) && fileName.toLowerCase(Locale.ROOT).endsWith(".pdf");
         boolean pdfContentType = "application/pdf".equalsIgnoreCase(contentType);
         if (!pdfName || !pdfContentType) {
@@ -112,9 +215,6 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    /**
-     * 获取文件输入流，计算并返回统一小写格式的 MD5 字符串
-     */
     private String calculateMd5(MultipartFile file) {
         try {
             return Md5Utils.md5Hex(file.getInputStream()).toLowerCase(Locale.ROOT);
@@ -123,11 +223,11 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    /**
-     * 校验客户端传来的元数据（MD5、文件大小等）是否与后端实际计算的结果一致
-     */
-    private void validateClientMetadata(UploadDocumentDTO uploadDocument, String actualPaperMd5, long actualFileSizeBytes) {
-        // 确保客户端传递了必要的元数据参数
+    private void validateClientMetadata(
+            UploadDocumentDTO uploadDocument,
+            String actualPaperMd5,
+            long actualFileSizeBytes
+    ) {
         if (uploadDocument == null
                 || !StringUtils.hasText(uploadDocument.getPaperMd5())
                 || uploadDocument.getFileSizeBytes() == null
@@ -135,20 +235,18 @@ public class DocumentServiceImpl implements DocumentService {
             throw metadataMismatch(uploadDocument, actualPaperMd5, actualFileSizeBytes);
         }
 
-        // 统一转为小写对比
         String expectedPaperMd5 = uploadDocument.getPaperMd5().trim().toLowerCase(Locale.ROOT);
         Long expectedFileSizeBytes = uploadDocument.getFileSizeBytes();
-        
-        // 如果 MD5 或文件大小不匹配，说明文件可能在传输中途损坏，或者遭受了篡改
         if (!actualPaperMd5.equals(expectedPaperMd5) || actualFileSizeBytes != expectedFileSizeBytes) {
             throw metadataMismatch(uploadDocument, actualPaperMd5, actualFileSizeBytes);
         }
     }
 
-    /**
-     * 辅助方法：构建一个元数据不匹配的异常，附带实际值与期望值以便前端或日志排查
-     */
-    private BusinessException metadataMismatch(UploadDocumentDTO uploadDocument, String actualPaperMd5, long actualFileSizeBytes) {
+    private BusinessException metadataMismatch(
+            UploadDocumentDTO uploadDocument,
+            String actualPaperMd5,
+            long actualFileSizeBytes
+    ) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("expectedPaperMd5", uploadDocument == null ? null : uploadDocument.getPaperMd5());
         data.put("actualPaperMd5", actualPaperMd5);
@@ -157,24 +255,23 @@ public class DocumentServiceImpl implements DocumentService {
         return new BusinessException(ErrorCode.FILE_METADATA_MISMATCH, ErrorCode.FILE_METADATA_MISMATCH.getMessage(), data);
     }
 
-    /**
-     * 构造返回给前端的上传解析进度 DTO
-     */
-    private UploadProgressDTO toUploadProgress(UploadDocumentDTO uploadDocument, String actualPaperMd5, long actualFileSizeBytes) {
+    private UploadProgressDTO toUploadProgress(
+            UploadDocumentDTO uploadDocument,
+            String actualPaperMd5,
+            long actualFileSizeBytes,
+            MinerUParseResult parseResult
+    ) {
         UploadProgressDTO progress = new UploadProgressDTO();
         progress.setTraceId(uploadDocument.getTraceId());
         progress.setPaperMd5(actualPaperMd5);
         progress.setFileName(safeFileName(uploadDocument.getFileName()));
         progress.setFileSizeBytes(actualFileSizeBytes);
         progress.setSubmissionTime(uploadDocument.getSubmissionTime());
-        progress.setParseStatus(PARSE_STATUS_PARSING);
+        progress.setParseStatus(PARSE_STATUS_PARSED);
+        progress.setFullZipUrl(parseResult.fullZipUrl());
         return progress;
     }
 
-    /**
-     * 将数据库中的 PaperEntity 实体对象转换为轻量级的文献摘要 DTO
-     * 用于给查重拦截提示时提供已有文献的信息
-     */
     private PaperSummaryDTO toSummary(PaperEntity paper) {
         PaperSummaryDTO summary = new PaperSummaryDTO();
         summary.setPaperId(paper.getPaperId());
@@ -193,9 +290,6 @@ public class DocumentServiceImpl implements DocumentService {
         return summary;
     }
 
-    /**
-     * 将 JSON 数组字符串解析为 List<String>
-     */
     private List<String> parseJsonArray(String json) {
         if (!StringUtils.hasText(json)) {
             return new ArrayList<>();
@@ -208,9 +302,6 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    /**
-     * 将实体类中的 LocalDateTime 转换为带东八区偏移的 OffsetDateTime
-     */
     private OffsetDateTime toOffsetDateTime(PaperEntity paper) {
         if (paper.getUploadTime() == null) {
             return null;
@@ -218,9 +309,6 @@ public class DocumentServiceImpl implements DocumentService {
         return paper.getUploadTime().atOffset(ZoneOffset.ofHours(8));
     }
 
-    /**
-     * 拼接并返回文献的存储路径
-     */
     private String storageLocation(PaperEntity paper) {
         if (paper.getPaperId() == null) {
             return "";
@@ -228,11 +316,18 @@ public class DocumentServiceImpl implements DocumentService {
         return "papers/" + paper.getPaperId() + "/original/";
     }
 
-    /**
-     * 获取安全的文件名（剥离掉可能的目录路径部分，防止目录穿越）
-     */
     private String safeFileName(String fileName) {
         String safeName = StringUtils.getFilename(fileName);
         return StringUtils.hasText(safeName) ? safeName : fileName;
+    }
+
+    private String trimToNull(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private record MinerUParseResult(String batchId, String fullZipUrl) {
     }
 }

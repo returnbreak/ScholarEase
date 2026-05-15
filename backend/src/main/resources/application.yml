@@ -1,5 +1,5 @@
 server:
-  port: 8080 # ?????
+  port: 8080
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/scholarease?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
@@ -11,13 +11,28 @@ spring:
       host: localhost
       port: 6379
       password: 123456
+mineru:
+  enabled: true
+  baseUrl: https://mineru.net
+  token: ${MINERU_TOKEN:eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI4MDIwMDA0NCIsInJvbCI6IlJPTEVfUkVHSVNURVIiLCJpc3MiOiJPcGVuWExhYiIsImlhdCI6MTc3ODcyNjQxMywiY2xpZW50SWQiOiJsa3pkeDU3bnZ5MjJqa3BxOXgydyIsInBob25lIjoiMTgwOTUwMTM5MzgiLCJvcGVuSWQiOm51bGwsInV1aWQiOiIwYjA0NjY5ZC05ODYwLTQ0ZDUtOTlkNi0xNzBmMTljNDRkOGYiLCJlbWFpbCI6IiIsImV4cCI6MTc4NjUwMjQxM30.oauUQ-LUy9qrOHPA-OPzawUrjG8Pn5E8Jnd1L8fNiV9JQIY9ZHqFyBfGjfJ7jcwAyZtF-IZxWapy7WGIpeKuZA}
+  modelVersion: vlm
+  sourceFile:
+    mode: mineru-signed-upload
+  api:
+    fileUrlsBatchPath: /api/v4/file-urls/batch
+    batchResultsPath: /api/v4/extract-results/batch/{batchId}
+  polling:
+    interval: 5s
+    maxAttempts: 60
 minio:
   endpoint: http://localhost:9000
   accessKey: minioadmin
   secretKey: minioadmin
   bucketName: literatures
   publicUrl: http://localhost:9000
-
+  storage:
+    originalPrefix: papers/{paperId}/original/
+    parsedPrefix: papers/{paperId}/mineru/
 logging:
   file:
     name: ${LOG_FILE:../logs/scholarease-backend.log}

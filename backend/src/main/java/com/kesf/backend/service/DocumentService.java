@@ -1,5 +1,7 @@
 package com.kesf.backend.service;
 
+import com.kesf.backend.dto.PageResultDTO;
+import com.kesf.backend.dto.PaperSummaryDTO;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,4 +19,6 @@ public interface DocumentService {
      * - 返回前端可直接消费的上传进度数据。
      */
     UploadProgressDTO uploadDocument(MultipartFile file, UploadDocumentDTO uploadDocument);
+
+    PageResultDTO<PaperSummaryDTO> listDocuments(String keyword, Integer year, String venue, Integer page, Integer pageSize);
 }

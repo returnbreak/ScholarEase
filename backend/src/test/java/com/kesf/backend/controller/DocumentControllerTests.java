@@ -1,6 +1,8 @@
 package com.kesf.backend.controller;
 
 import com.kesf.backend.dto.ApiResponseDTO;
+import com.kesf.backend.dto.PageResultDTO;
+import com.kesf.backend.dto.PaperSummaryDTO;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
 import com.kesf.backend.service.DocumentService;
@@ -12,6 +14,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -46,5 +49,22 @@ class DocumentControllerTests {
 
         assertThat(response.getTraceId()).isEqualTo("upload-trace-001");
         assertThat(response.getData()).isSameAs(progress);
+    }
+
+    @Test
+    void listDocumentsDelegatesToService() {
+        DocumentController controller = new DocumentController(documentService);
+        PageResultDTO<PaperSummaryDTO> page = new PageResultDTO<>(List.of(), 1, 20, 0L, false);
+        when(documentService.listDocuments("attention", 2017, "NeurIPS", 1, 20)).thenReturn(page);
+
+        ApiResponseDTO<PageResultDTO<PaperSummaryDTO>> response = controller.listDocuments(
+                "attention",
+                2017,
+                "NeurIPS",
+                1,
+                20
+        );
+
+        assertThat(response.getData()).isSameAs(page);
     }
 }

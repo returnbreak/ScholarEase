@@ -228,6 +228,7 @@ async function uploadPendingDocuments() {
       preview.uploadStatus = 'success'
       preview.message = uploadProgress.parseStatus === 'PARSING' ? '已提交解析' : '上传成功'
       ElMessage.success(`已提交解析：${uploadProgress.fileName || preview.fileName}`)
+      removePreview(preview.id)
     } catch (error) {
       // API 层会把后端错误码包装为 DocumentApiError，这里转换成适合用户阅读的中文文案。
       preview.uploadStatus = 'failed'
@@ -237,6 +238,9 @@ async function uploadPendingDocuments() {
   }
 
   isUploading.value = false
+  if (!uploadPreviews.value.length) {
+    uploadNotice.value = ''
+  }
   // 上传结束后重新拉取列表，确保表格里的解析状态、标题和存储位置来自后端最终结果。
   await loadDocuments()
 }

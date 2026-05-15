@@ -18,4 +18,6 @@ public class UploadProgressDTO {
     private OffsetDateTime submissionTime;
 
     private String parseStatus;
+
+    private String fullZipUrl;
 }

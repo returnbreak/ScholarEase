@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
      * @return 封装了错误信息的 ResponseEntity 对象，包含统一的响应体和业务决定的 HTTP 状态码。
      */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponseDTO<Object>> handleBusinessException(
+    public ApiResponseDTO<Object> handleBusinessException(
             BusinessException exception,
             HttpServletRequest request
     ) {
@@ -68,10 +68,7 @@ public class GlobalExceptionHandler {
                 exception.getData()
         );
 
-        // 使用异常中定义的 HTTP 状态码返回响应
-        return ResponseEntity
-                .status(errorCode.getHttpStatus())
-                .body(response);
+        return response;
     }
 
     /**
@@ -83,7 +80,7 @@ public class GlobalExceptionHandler {
      * @return 封装了通用内部错误信息的 ResponseEntity 对象。
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponseDTO<Object>> handleUnexpectedException(
+    public ApiResponseDTO<Object> handleUnexpectedException(
             Exception exception,
             HttpServletRequest request
     ) {
@@ -106,9 +103,7 @@ public class GlobalExceptionHandler {
         );
 
         // 返回 500 内部服务器错误状态
-        return ResponseEntity
-                .status(errorCode.getHttpStatus())
-                .body(response);
+        return response;
     }
 
     /**

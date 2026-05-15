@@ -1,15 +1,19 @@
 package com.kesf.backend.controller;
 
 import com.kesf.backend.dto.ApiResponseDTO;
+import com.kesf.backend.dto.PageResultDTO;
+import com.kesf.backend.dto.PaperSummaryDTO;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
 import com.kesf.backend.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,6 +30,17 @@ public class DocumentController {
      * 这样后续如果要接入任务队列或 MinerU 解析，也不会让接口层变重。
      */
     private final DocumentService documentService;
+
+    @GetMapping
+    public ApiResponseDTO<PageResultDTO<PaperSummaryDTO>> listDocuments(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String venue,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize
+    ) {
+        return ApiResponseDTO.success(documentService.listDocuments(keyword, year, venue, page, pageSize));
+    }
 
     /**
      * 上传单篇本地 PDF 文献。
@@ -45,7 +60,7 @@ public class DocumentController {
             @ModelAttribute UploadDocumentDTO uploadDocument
     ) {
         return ApiResponseDTO.success(
-                "Upload succeeded; parsing started",
+                "Upload succeeded; parsing completed",
                 documentService.uploadDocument(file, uploadDocument),
                 uploadDocument.getTraceId()
         );

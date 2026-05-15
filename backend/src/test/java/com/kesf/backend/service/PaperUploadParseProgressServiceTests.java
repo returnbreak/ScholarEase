@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,5 +64,35 @@ class PaperUploadParseProgressServiceTests {
 
         assertThat(captor.getValue().getSubmissionTime()).isNull();
         assertThat(captor.getValue().getParseStatus()).isEqualTo(1);
+    }
+
+    @Test
+    void storesUtcSubmissionTimeAsBeijingLocalTime() {
+        UploadDocumentDTO dto = new UploadDocumentDTO();
+        dto.setTraceId("trace-utc");
+        dto.setPaperMd5("1f3870be274f6c49b3e31a0c6728957f");
+        dto.setFileName("paper.pdf");
+        dto.setSubmissionTime(OffsetDateTime.parse("2026-05-15T08:23:17Z"));
+
+        progressService.recordUploadProgress(dto);
+
+        ArgumentCaptor<PaperUploadParseProgressEntity> captor =
+                ArgumentCaptor.forClass(PaperUploadParseProgressEntity.class);
+        verify(progressMapper).insert(captor.capture());
+
+        assertThat(captor.getValue().getSubmissionTime())
+                .isEqualTo(LocalDateTime.parse("2026-05-15T16:23:17"));
+    }
+
+    @Test
+    void updatesParseStatusByTraceId() {
+        progressService.updateParseStatus("trace-001", 2);
+
+        ArgumentCaptor<PaperUploadParseProgressEntity> captor =
+                ArgumentCaptor.forClass(PaperUploadParseProgressEntity.class);
+        verify(progressMapper).update(captor.capture(), any());
+
+        PaperUploadParseProgressEntity entity = captor.getValue();
+        assertThat(entity.getParseStatus()).isEqualTo(2);
     }
 }

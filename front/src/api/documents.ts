@@ -52,6 +52,7 @@ export type UploadProgress = {
   fileSizeBytes: number
   submissionTime: string
   parseStatus: ParseStatus
+  fullZipUrl?: string | null
 }
 
 export type ListDocumentsParams = {
@@ -73,7 +74,10 @@ export class DocumentApiError extends Error {
   data: unknown
   traceId?: string
 
-  constructor(message: string, options: { code: string; status: number; data?: unknown; traceId?: string }) {
+  constructor(
+    message: string,
+    options: { code: string; status: number; data?: unknown; traceId?: string },
+  ) {
     super(message)
     this.name = 'DocumentApiError'
     this.code = options.code
@@ -137,12 +141,16 @@ export async function uploadDocument(input: UploadDocumentInput) {
   formData.append('fileSizeBytes', String(input.fileSizeBytes))
   formData.append('submissionTime', input.submissionTime)
 
-  const response = await axios.post<ApiResponse<UploadProgress> | null>(buildApiUrl('/documents/upload'), formData, {
-    headers: {
-      'X-Trace-Id': input.traceId,
+  const response = await axios.post<ApiResponse<UploadProgress> | null>(
+    buildApiUrl('/documents/upload'),
+    formData,
+    {
+      headers: {
+        'X-Trace-Id': input.traceId,
+      },
+      validateStatus: () => true,
     },
-    validateStatus: () => true,
-  })
+  )
 
   return parseApiResponse<UploadProgress>(response)
 }
