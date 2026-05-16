@@ -807,7 +807,14 @@ onBeforeUnmount(() => {
   border-right: 1px solid #e8e0d4;
   border-bottom: 1px solid #e8e0d4;
   text-align: left;
+}
+
+.literature-table th {
   white-space: nowrap;
+}
+
+.literature-table td {
+  word-break: break-word;
 }
 
 .literature-table th:last-child,

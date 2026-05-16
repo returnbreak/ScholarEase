@@ -38,3 +38,27 @@ CREATE TABLE paper_upload_parse_progress(
     KEY idx_upload_parse_progress_parse_status (parse_status)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文献上传解析进度表';
 ```
+
+## 文献位置表
+
+`paper_locations` 记录每篇文献在 MinIO 和 Zotero 中的物理存储位置及分类归属。
+上传解析完成后写入该表，通过 `paper_md5` 与 `papers` 主表关联。
+
+```sql
+CREATE TABLE paper_locations(
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    paper_id BIGINT UNSIGNED NULL COMMENT '论文ID，关联papers.id',
+    paper_md5 VARCHAR(32) NOT NULL COMMENT '文件MD5标识',
+    file_name VARCHAR(512) NOT NULL COMMENT '文献文件名称',
+    submission_time DATETIME NULL COMMENT '提交时间',
+    minio_bucket VARCHAR(128) NULL COMMENT 'MinIO存储桶名称',
+    minio_original_key VARCHAR(1024) NULL COMMENT 'MinIO原始PDF对象键',
+    minio_parsed_prefix VARCHAR(1024) NULL COMMENT 'MinIO解析产物路径前缀',
+    zotero_item_key VARCHAR(64) NULL COMMENT 'Zotero文献条目Key，用于API访问(zotero://select/library/items/{key})',
+    zotero_collection_name VARCHAR(512) NULL COMMENT 'Zotero分类/集合名称',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_paper_md5 (paper_md5),
+    KEY idx_paper_id (paper_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文献位置表';
+```

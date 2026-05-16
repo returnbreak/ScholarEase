@@ -12,8 +12,10 @@ import com.kesf.backend.dto.PaperSummaryDTO;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
 import com.kesf.backend.entity.PaperEntity;
+import com.kesf.backend.entity.PaperLocationsEntity;
 import com.kesf.backend.exception.BusinessException;
 import com.kesf.backend.exception.ErrorCode;
+import com.kesf.backend.mapper.PaperLocationsMapper;
 import com.kesf.backend.mapper.PaperMapper;
 import com.kesf.backend.service.DocumentService;
 import com.kesf.backend.service.ObjectStorageService;
@@ -33,10 +35,13 @@ import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -53,6 +58,7 @@ public class DocumentServiceImpl implements DocumentService {
     private static final String MINERU_STATE_FAILED = "failed";
 
     private final PaperMapper paperMapper;
+    private final PaperLocationsMapper paperLocationsMapper;
     private final PaperUploadParseProgressService progressService;
     private final MinerUClient minerUClient;
     private final MinerUProperties minerUProperties;
@@ -76,7 +82,8 @@ public class DocumentServiceImpl implements DocumentService {
             throw new BusinessException(
                     ErrorCode.DUPLICATE_PAPER,
                     ErrorCode.DUPLICATE_PAPER.getMessage(),
-                    new DuplicatePaperDataDTO("PDF_MD5_MATCHED", toSummary(duplicatePaper))
+                    new DuplicatePaperDataDTO("PDF_MD5_MATCHED",
+                            toSummary(duplicatePaper, Map.of(actualPaperMd5, "")))
             );
         }
 
@@ -86,6 +93,16 @@ public class DocumentServiceImpl implements DocumentService {
         return toUploadProgress(uploadDocument, actualPaperMd5, actualFileSizeBytes, parseResult);
     }
 
+    /**
+     * 分页查询文献列表，支持根据关键字、年份、发表来源等多条件进行动态过滤。
+     *
+     * @param keyword  搜索关键字 (模糊匹配标题、文件名、作者或 DOI)
+     * @param year     发表年份 (精确匹配)
+     * @param venue    发表来源如期刊/会议名 (模糊匹配)
+     * @param page     当前页码
+     * @param pageSize 每页条数
+     * @return 包含文献概览列表、分页信息以及是否有下一页的封装对象
+     */
     @Override
     public PageResultDTO<PaperSummaryDTO> listDocuments(
             String keyword,
@@ -94,10 +111,14 @@ public class DocumentServiceImpl implements DocumentService {
             Integer page,
             Integer pageSize
     ) {
+        // 1. 处理分页参数的安全默认值，防止空指针或非法的极值拖垮数据库
         int safePage = page == null || page < 1 ? 1 : page;
         int safePageSize = pageSize == null || pageSize < 1 ? 20 : Math.min(pageSize, 100);
 
+        // 2. 初始化 MyBatis-Plus 的 Lambda 查询条件构造器
         LambdaQueryWrapper<PaperEntity> queryWrapper = new LambdaQueryWrapper<>();
+        
+        // 3. 动态构建关键字匹配条件：只要标题、文件名、作者列表(JSON字符串)或 DOI 中包含关键字即视为命中
         String trimmedKeyword = trimToNull(keyword);
         if (trimmedKeyword != null) {
             queryWrapper.and(wrapper -> wrapper
@@ -109,20 +130,33 @@ public class DocumentServiceImpl implements DocumentService {
                     .or()
                     .like(PaperEntity::getDoi, trimmedKeyword));
         }
+        
+        // 4. 动态构建年份精确匹配条件
         if (year != null) {
             queryWrapper.eq(PaperEntity::getYear, year);
         }
+        
+        // 5. 动态构建来源模糊匹配条件
         String trimmedVenue = trimToNull(venue);
         if (trimmedVenue != null) {
             queryWrapper.like(PaperEntity::getVenue, trimmedVenue);
         }
+        
+        // 6. 设定默认排序规则：优先按上传时间倒序排列，若时间相同则按主键 ID 倒序（保证分页时的顺序稳定性）
         queryWrapper.orderByDesc(PaperEntity::getUploadTime).orderByDesc(PaperEntity::getPaperId);
 
+        // 7. 执行底层的分页 SQL 查询
         Page<PaperEntity> resultPage = paperMapper.selectPage(new Page<>(safePage, safePageSize), queryWrapper);
-        List<PaperSummaryDTO> items = resultPage.getRecords().stream()
-                .map(this::toSummary)
+
+        // 8. 批量查询文献位置表，构建 paper_md5 -> zotero_collection_name 映射
+        List<PaperEntity> records = resultPage.getRecords();
+        Map<String, String> md5ToCollectionName = buildCollectionNameMap(records);
+
+        List<PaperSummaryDTO> items = records.stream()
+                .map(paper -> toSummary(paper, md5ToCollectionName))
                 .toList();
 
+        // 8. 组装并返回自定义的分页结果对象，通过对比当前页和总页数来确定 hasNext (是否有下一页) 标志
         return new PageResultDTO<>(
                 items,
                 safePage,
@@ -175,15 +209,30 @@ public class DocumentServiceImpl implements DocumentService {
             );
             
             // 6. 将提取到的 Zotero 元数据与基础文件信息组装为实体类，并保存到数据库
-            paperMapper.insert(toPaperEntity(
+            PaperEntity paperEntity = toPaperEntity(
                     uploadDocument,
                     actualPaperMd5,
                     actualFileSizeBytes,
                     fileName,
                     zoteroResult.metadata()
-            ));
-            
-            // 7. 若一切顺利，更新数据库中该任务的进度状态为“解析完成”
+            );
+            paperMapper.insert(paperEntity);
+
+            // 7. 写入文献位置信息（MinIO + Zotero）
+            PaperLocationsEntity locations = new PaperLocationsEntity();
+            locations.setPaperId(paperEntity.getPaperId());
+            locations.setPaperMd5(actualPaperMd5);
+            locations.setFileName(fileName);
+            locations.setSubmissionTime(uploadDocument.getSubmissionTime().toLocalDateTime());
+            locations.setMinioBucket(minioProperties.getBucketName());
+            locations.setMinioOriginalKey(originalPdfObjectKey(traceId, fileName));
+            locations.setMinioParsedPrefix(minioProperties.getStorage().getParsedPrefix()
+                    .replace("{traceId}", safeTraceId(traceId)));
+            locations.setZoteroItemKey(zoteroResult.parentItemKey());
+            locations.setZoteroCollectionName(zoteroResult.collectionName());
+            paperLocationsMapper.insert(locations);
+
+            // 8. 若一切顺利，更新数据库中该任务的进度状态为”解析完成”
             progressService.updateParseStatus(traceId, PARSE_STATUS_PARSED_VALUE);
             
             return parseResult;
@@ -500,7 +549,7 @@ public class DocumentServiceImpl implements DocumentService {
         return progress;
     }
 
-    private PaperSummaryDTO toSummary(PaperEntity paper) {
+    private PaperSummaryDTO toSummary(PaperEntity paper, Map<String, String> md5ToCollectionName) {
         PaperSummaryDTO summary = new PaperSummaryDTO();
         summary.setPaperId(paper.getPaperId());
         summary.setPaperMd5(paper.getPaperMd5());
@@ -510,7 +559,7 @@ public class DocumentServiceImpl implements DocumentService {
         List<String> authors = parseJsonArray(paper.getAuthorsJson());
         summary.setAuthors(authors);
         summary.setAuthorText(String.join(", ", authors));
-        summary.setStorageLocation(storageLocation(paper));
+        summary.setStorageLocation(md5ToCollectionName.getOrDefault(paper.getPaperMd5(), ""));
         summary.setUploadTime(toOffsetDateTime(paper));
         summary.setYear(paper.getYear());
         summary.setVenue(paper.getVenue());
@@ -537,11 +586,23 @@ public class DocumentServiceImpl implements DocumentService {
         return paper.getUploadTime().atOffset(ZoneOffset.ofHours(8));
     }
 
-    private String storageLocation(PaperEntity paper) {
-        if (paper.getPaperId() == null) {
-            return "";
+    private Map<String, String> buildCollectionNameMap(List<PaperEntity> papers) {
+        if (papers.isEmpty()) {
+            return Collections.emptyMap();
         }
-        return "papers/" + paper.getPaperId() + "/original/";
+        Set<String> md5s = papers.stream()
+                .map(PaperEntity::getPaperMd5)
+                .collect(Collectors.toSet());
+        List<PaperLocationsEntity> locations = paperLocationsMapper.selectList(
+                new LambdaQueryWrapper<PaperLocationsEntity>()
+                        .in(PaperLocationsEntity::getPaperMd5, md5s));
+        return locations.stream()
+                .collect(Collectors.toMap(
+                        PaperLocationsEntity::getPaperMd5,
+                        loc -> StringUtils.hasText(loc.getZoteroCollectionName())
+                                ? loc.getZoteroCollectionName()
+                                : "",
+                        (a, b) -> a));
     }
 
     private String safeFileName(String fileName) {

@@ -9,6 +9,7 @@ import com.kesf.backend.dto.UploadProgressDTO;
 import com.kesf.backend.entity.PaperEntity;
 import com.kesf.backend.exception.BusinessException;
 import com.kesf.backend.exception.ErrorCode;
+import com.kesf.backend.mapper.PaperLocationsMapper;
 import com.kesf.backend.mapper.PaperMapper;
 import com.kesf.backend.service.impl.DocumentServiceImpl;
 import com.kesf.backend.utils.MinerUClient;
@@ -58,6 +59,9 @@ class DocumentServiceImplTests {
     @Mock
     private ObjectStorageService objectStorageService;
 
+    @Mock
+    private PaperLocationsMapper paperLocationsMapper;
+
     private DocumentServiceImpl documentService;
 
     @BeforeEach
@@ -67,6 +71,7 @@ class DocumentServiceImplTests {
         MinioProperties minioProperties = new MinioProperties();
         documentService = new DocumentServiceImpl(
                 paperMapper,
+                paperLocationsMapper,
                 progressService,
                 minerUClient,
                 minerUProperties,
@@ -99,7 +104,9 @@ class DocumentServiceImplTests {
                                 2005,
                                 "Journal of Hydrology",
                                 "10.1016/j.jhydrol.2005.01.006"
-                        )
+                        ),
+                        "ITEM-KEY-001",
+                        "Test Collection"
                 ));
 
         UploadProgressDTO result = documentService.uploadDocument(file, dto);

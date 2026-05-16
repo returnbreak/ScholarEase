@@ -98,8 +98,10 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
         if (!canRecognize) {
             throw zoteroFailed("Zotero could not recognize PDF metadata");
         }
-        ZoteroPaperMetadata paperMetadata = waitForRecognizedMetadata(sourceUrl, previousLibraryVersion);
-        return new ZoteroImportResult(sessionId, true, paperMetadata);
+        RecognizedResult recognized = waitForRecognizedMetadata(sourceUrl, previousLibraryVersion);
+        String collectionName = lookupFirstCollectionName(recognized.parentItemKey());
+        return new ZoteroImportResult(sessionId, true, recognized.metadata(),
+                recognized.parentItemKey(), collectionName);
     }
 
     /**
@@ -130,14 +132,14 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
      * @param previousLibraryVersion 导入 PDF 前的库版本号，缩小检索范围
      * @return 提取并封装好的论文元数据
      */
-    private ZoteroPaperMetadata waitForRecognizedMetadata(String sourceUrl, long previousLibraryVersion) {
+    private RecognizedResult waitForRecognizedMetadata(String sourceUrl, long previousLibraryVersion) {
         int maxAttempts = Math.max(1, properties.getMetadataMaxAttempts());
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             // 尝试查找包含我们 sourceUrl 的附件，并获取其所属的父项目 (即 Zotero 为该 PDF 生成的条目)
             String parentItemKey = findParentItemKey(sourceUrl, previousLibraryVersion);
             if (StringUtils.hasText(parentItemKey)) {
                 // 如果找到了父项目，说明识别完成，直接读取其元数据
-                return readParentMetadata(parentItemKey);
+                return new RecognizedResult(readParentMetadata(parentItemKey), parentItemKey);
             }
             // 如果还没找到，并且未达到最大重试次数，则休眠等待后继续下一轮轮询
             if (attempt < maxAttempts) {
@@ -471,6 +473,64 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
             throw zoteroFailed("Zotero item key is empty");
         }
         return itemKey.replaceAll("[^A-Za-z0-9]", "");
+    }
+
+    /**
+     * 查询父项目所属的第一个 Zotero 分类（集合）的名称。
+     */
+    private String lookupFirstCollectionName(String parentItemKey) {
+        if (!StringUtils.hasText(parentItemKey)) {
+            return null;
+        }
+        try {
+            String itemJson = fetchItem(parentItemKey);
+            JsonNode data = objectMapper.readTree(itemJson).path("data");
+            JsonNode collections = data.path("collections");
+            if (!collections.isArray() || collections.isEmpty()) {
+                return null;
+            }
+            String firstCollectionKey = collections.get(0).asText(null);
+            if (!StringUtils.hasText(firstCollectionKey)) {
+                return null;
+            }
+            return fetchCollectionName(firstCollectionKey);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String fetchItem(String itemKey) {
+        HttpRequest request = HttpRequest.newBuilder(apiUri(LOCAL_ITEMS_PATH + "/" + safeItemKey(itemKey) + "?format=json"))
+                .timeout(properties.getRequestTimeout())
+                .header("Zotero-API-Version", "3")
+                .GET()
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.body();
+    }
+
+    private String fetchCollectionName(String collectionKey) {
+        HttpRequest request = HttpRequest.newBuilder(apiUri("/api/users/0/collections/" + safeItemKey(collectionKey) + "?format=json"))
+                .timeout(properties.getRequestTimeout())
+                .header("Zotero-API-Version", "3")
+                .GET()
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        try {
+            JsonNode data = objectMapper.readTree(response.body()).path("data");
+            return textOrNull(data, "name");
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private record RecognizedResult(ZoteroPaperMetadata metadata, String parentItemKey) {
     }
 
     private BusinessException zoteroFailed(String message) {

@@ -9,7 +9,9 @@ public interface ZoteroImportService {
     record ZoteroImportResult(
             String sessionId,
             boolean canRecognize,
-            ZoteroPaperMetadata metadata
+            ZoteroPaperMetadata metadata,
+            String parentItemKey,
+            String collectionName
     ) {
     }
 
