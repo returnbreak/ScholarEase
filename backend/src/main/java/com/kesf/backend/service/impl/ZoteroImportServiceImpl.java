@@ -104,6 +104,36 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
                 recognized.parentItemKey(), collectionName);
     }
 
+    @Override
+    public void deleteItem(String itemKey) {
+        if (!properties.isEnabled()) {
+            throw zoteroFailed("Zotero import is disabled");
+        }
+        if (!StringUtils.hasText(itemKey)) {
+            return;
+        }
+        String safeKey = safeItemKey(itemKey);
+        Map<String, Object> requestBody = Map.of("operation", "trash_item", "item_key", safeKey);
+        HttpRequest request = HttpRequest.newBuilder(apiUri("/write"))
+                .timeout(properties.getRequestTimeout())
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(writeJson(requestBody)))
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() != 200) {
+            throw zoteroFailed("Zotero trash item " + safeKey + " failed with HTTP " + response.statusCode());
+        }
+        JsonNode result;
+        try {
+            result = objectMapper.readTree(response.body());
+        } catch (JsonProcessingException e) {
+            throw zoteroFailed("Zotero write response is not valid JSON");
+        }
+        if (!result.path("success").asBoolean(false)) {
+            throw zoteroFailed("Zotero trash item " + safeKey + " failed: " + result.path("error").asText("unknown"));
+        }
+    }
+
     /**
      * 获取 Zotero 本地库当前的最新版本号 (Library Version)。
      * 通过查询本地项 (limit=1) 并读取 HTTP 响应头中的 Last-Modified-Version 字段实现。

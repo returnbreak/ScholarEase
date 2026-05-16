@@ -155,6 +155,19 @@ export async function uploadDocument(input: UploadDocumentInput) {
   return parseApiResponse<UploadProgress>(response)
 }
 
+export type DeleteResult = {
+  deleted: boolean
+  paperId: number
+}
+
+export async function deleteDocument(paperId: number) {
+  const response = await axios.delete<ApiResponse<DeleteResult> | null>(
+    buildApiUrl(`/documents/${paperId}`),
+    { validateStatus: () => true },
+  )
+  return parseApiResponse(response)
+}
+
 export async function listDocuments(params: ListDocumentsParams = {}) {
   const response = await axios.get<ApiResponse<PageResult<PaperSummary>> | null>(
     buildApiUrl('/documents', {

@@ -6,6 +6,8 @@ public interface ZoteroImportService {
 
     ZoteroImportResult importParsedPaper(byte[] pdfBytes, String fileName, String traceId);
 
+    void deleteItem(String itemKey);
+
     record ZoteroImportResult(
             String sessionId,
             boolean canRecognize,

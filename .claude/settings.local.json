@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"http://127.0.0.1:23119/debug\")",
+      "Bash(grep -n -A 5 \"operation\\\\b\" /tmp/zotero-write-api/bootstrap.js | head -40)",
+      "Read(//tmp/zotero-write-api/**)",
+      "Bash(curl -s -X POST \"http://127.0.0.1:23119/write\" -H \"Content-Type: application/json\" -d '{\"operation\":\"trash_item\",\"item_key\":\"WW9I8QU9\"}')"
+    ]
+  }
+}

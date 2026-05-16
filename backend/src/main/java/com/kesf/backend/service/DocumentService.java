@@ -6,6 +6,8 @@ import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 public interface DocumentService {
 
     /**
@@ -21,4 +23,6 @@ public interface DocumentService {
     UploadProgressDTO uploadDocument(MultipartFile file, UploadDocumentDTO uploadDocument);
 
     PageResultDTO<PaperSummaryDTO> listDocuments(String keyword, Integer year, String venue, Integer page, Integer pageSize);
+
+    Map<String, Object> deleteDocument(Long paperId);
 }

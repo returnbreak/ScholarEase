@@ -5,9 +5,9 @@ import {
   ArrowLeft,
   ArrowRight,
   Close,
+  Delete,
   Download,
   Filter,
-  MoreFilled,
   Refresh,
   Search,
   Star,
@@ -15,7 +15,9 @@ import {
   UploadFilled,
   View,
 } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
 import {
+  deleteDocument,
   DocumentApiError,
   listDocuments,
   type DuplicatePaperData,
@@ -292,6 +294,26 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback
 }
 
+async function handleDeleteDocument(paperId: number, fileName: string) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除「${fileName}」吗？此操作将从数据库、MinIO 和 Zotero 中同时移除该文献。`,
+      '确认删除',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteDocument(paperId)
+    ElMessage.success(`已删除：${fileName}`)
+    await loadDocuments()
+  } catch (error) {
+    const message = error instanceof DocumentApiError ? error.message : '删除失败'
+    ElMessage.error(message)
+  }
+}
+
 // 上一页：只有当前页大于 1 才触发请求，避免无意义的 page=0。
 function goPreviousPage() {
   if (currentPage.value <= 1) {
@@ -480,8 +502,13 @@ onBeforeUnmount(() => {
                   <el-tooltip content="收藏" placement="top">
                     <el-button link :icon="Star" aria-label="收藏" />
                   </el-tooltip>
-                  <el-tooltip content="更多" placement="top">
-                    <el-button class="more-button" link :icon="MoreFilled" aria-label="更多" />
+                  <el-tooltip content="删除" placement="top">
+                    <el-button
+                      link
+                      :icon="Delete"
+                      aria-label="删除"
+                      @click="handleDeleteDocument(item.paperId, item.fileName)"
+                    />
                   </el-tooltip>
                 </div>
               </td>

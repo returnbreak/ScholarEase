@@ -33,6 +33,10 @@ public enum ErrorCode {
 
     ZOTERO_WRITE_FAILED(HttpStatus.BAD_GATEWAY, "Zotero write failed"),
 
+    PAPER_NOT_FOUND(HttpStatus.NOT_FOUND, "Paper not found"),
+
+    DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Delete failed"),
+
     /**
      * 未被业务异常显式捕获的服务端未知异常。
      */

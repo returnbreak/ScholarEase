@@ -24,7 +24,9 @@ import com.kesf.backend.service.ZoteroImportService;
 import com.kesf.backend.utils.Md5Utils;
 import com.kesf.backend.utils.MinerUClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,6 +47,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocumentServiceImpl implements DocumentService {
@@ -164,6 +167,53 @@ public class DocumentServiceImpl implements DocumentService {
                 resultPage.getTotal(),
                 resultPage.getCurrent() < resultPage.getPages()
         );
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> deleteDocument(Long paperId) {
+        PaperEntity paper = paperMapper.selectById(paperId);
+        if (paper == null) {
+            throw new BusinessException(ErrorCode.PAPER_NOT_FOUND);
+        }
+
+        PaperLocationsEntity locations = paperLocationsMapper.selectOne(
+                new LambdaQueryWrapper<PaperLocationsEntity>()
+                        .eq(PaperLocationsEntity::getPaperMd5, paper.getPaperMd5()));
+
+        // 第一步：删除 MinIO（外部，不可回滚，先执行）
+        if (locations != null) {
+            if (StringUtils.hasText(locations.getMinioOriginalKey())) {
+                objectStorageService.deleteObject(locations.getMinioOriginalKey());
+                log.info("Deleted MinIO original PDF: {}", locations.getMinioOriginalKey());
+            }
+            if (StringUtils.hasText(locations.getMinioParsedPrefix())) {
+                objectStorageService.deleteObjectsByPrefix(locations.getMinioParsedPrefix());
+                log.info("Deleted MinIO parsed artifacts under: {}", locations.getMinioParsedPrefix());
+            }
+            String tracePrefix = extractTracePrefix(locations);
+            if (tracePrefix != null) {
+                objectStorageService.deleteObjectsByPrefix(tracePrefix);
+                log.info("Deleted MinIO trace level: {}", tracePrefix);
+            }
+        }
+
+        // 第二步：删除 Zotero（外部，不可回滚，先执行）
+        if (locations != null && StringUtils.hasText(locations.getZoteroItemKey())) {
+            zoteroImportService.deleteItem(locations.getZoteroItemKey());
+            log.info("Deleted Zotero item: {}", locations.getZoteroItemKey());
+        }
+
+        // 第三步：前面都成功，最后删 MySQL（内部，可回滚）
+        if (locations != null) {
+            paperLocationsMapper.deleteById(locations.getId());
+        }
+        paperMapper.deleteById(paperId);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("deleted", true);
+        result.put("paperId", paperId);
+        return result;
     }
 
     /**
@@ -584,6 +634,21 @@ public class DocumentServiceImpl implements DocumentService {
             return null;
         }
         return paper.getUploadTime().atOffset(ZoneOffset.ofHours(8));
+    }
+
+    private String extractTracePrefix(PaperLocationsEntity locations) {
+        String key = locations.getMinioParsedPrefix();
+        if (!StringUtils.hasText(key)) {
+            key = locations.getMinioOriginalKey();
+        }
+        if (!StringUtils.hasText(key)) {
+            return null;
+        }
+        int secondSlash = key.indexOf('/', key.indexOf('/') + 1);
+        if (secondSlash < 0) {
+            return null;
+        }
+        return key.substring(0, secondSlash + 1);
     }
 
     private Map<String, String> buildCollectionNameMap(List<PaperEntity> papers) {

@@ -8,14 +8,18 @@ import com.kesf.backend.dto.UploadProgressDTO;
 import com.kesf.backend.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -64,5 +68,11 @@ public class DocumentController {
                 documentService.uploadDocument(file, uploadDocument),
                 uploadDocument.getTraceId()
         );
+    }
+
+    @DeleteMapping("/{paperId}")
+    public ApiResponseDTO<Map<String, Object>> deleteDocument(@PathVariable Long paperId) {
+        Map<String, Object> result = documentService.deleteDocument(paperId);
+        return ApiResponseDTO.success("Document deleted", result);
     }
 }
