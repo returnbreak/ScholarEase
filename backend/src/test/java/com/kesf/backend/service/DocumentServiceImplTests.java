@@ -3,6 +3,7 @@ package com.kesf.backend.service;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kesf.backend.config.MinerUProperties;
+import com.kesf.backend.config.MinioProperties;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
 import com.kesf.backend.entity.PaperEntity;
@@ -18,16 +19,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,18 +54,24 @@ class DocumentServiceImplTests {
     @Mock
     private ZoteroImportService zoteroImportService;
 
+    @Mock
+    private ObjectStorageService objectStorageService;
+
     private DocumentServiceImpl documentService;
 
     @BeforeEach
     void setUp() {
         MinerUProperties minerUProperties = new MinerUProperties();
         minerUProperties.getPolling().setMaxAttempts(1);
+        MinioProperties minioProperties = new MinioProperties();
         documentService = new DocumentServiceImpl(
                 paperMapper,
                 progressService,
                 minerUClient,
                 minerUProperties,
-                zoteroImportService
+                zoteroImportService,
+                objectStorageService,
+                minioProperties
         );
     }
 
@@ -72,11 +84,30 @@ class DocumentServiceImplTests {
                 .thenReturn(new MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
         when(minerUClient.getBatchResult("batch-001", "trace-001"))
                 .thenReturn(new MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
+        when(minerUClient.downloadFullZip("https://mineru.example/full.zip"))
+                .thenReturn(minerUZipBytes());
 
         UploadProgressDTO result = documentService.uploadDocument(file, dto);
 
         verify(progressService).recordUploadProgress(dto);
+        verify(objectStorageService).putObject(
+                "uploads/trace-001/original/attention.pdf",
+                PDF_BYTES,
+                "application/pdf"
+        );
         verify(minerUClient).uploadToSignedUrl("https://signed.example/upload", PDF_BYTES);
+        verify(minerUClient).downloadFullZip("https://mineru.example/full.zip");
+        verify(objectStorageService).putObject(
+                "uploads/trace-001/mineru/full.md",
+                "# Parsed Markdown\n".getBytes(StandardCharsets.UTF_8),
+                "text/markdown; charset=utf-8"
+        );
+        verify(objectStorageService).putObject(
+                "uploads/trace-001/mineru/content_list_v2.json",
+                "[]".getBytes(StandardCharsets.UTF_8),
+                "application/json"
+        );
+        verifyNoMoreInteractions(objectStorageService);
         verify(zoteroImportService).importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001");
         verify(progressService).updateParseStatus("trace-001", 2);
         verify(paperMapper, never()).insert(any(PaperEntity.class));
@@ -119,6 +150,8 @@ class DocumentServiceImplTests {
                 .thenReturn(new MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
         when(minerUClient.getBatchResult("batch-001", "trace-001"))
                 .thenReturn(new MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
+        when(minerUClient.downloadFullZip("https://mineru.example/full.zip"))
+                .thenReturn(minerUZipBytes());
         when(zoteroImportService.importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001"))
                 .thenThrow(new BusinessException(ErrorCode.ZOTERO_WRITE_FAILED, "Zotero import failed"));
 
@@ -205,5 +238,25 @@ class DocumentServiceImplTests {
         dto.setFileSizeBytes(fileSizeBytes);
         dto.setSubmissionTime(OffsetDateTime.parse("2026-05-13T12:30:45+08:00"));
         return dto;
+    }
+
+    private static byte[] minerUZipBytes() {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
+                putZipEntry(zipOutputStream, "mineru-result/full.md", "# Parsed Markdown\n");
+                putZipEntry(zipOutputStream, "mineru-result/9bbfd84b-06a0-475b-a87e-68cf7148f26a_content_list_v2.json", "[]");
+                putZipEntry(zipOutputStream, "mineru-result/images/figure-1.jpg", "image-bytes");
+            }
+            return outputStream.toByteArray();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to build MinerU test ZIP", exception);
+        }
+    }
+
+    private static void putZipEntry(ZipOutputStream zipOutputStream, String name, String content) throws IOException {
+        zipOutputStream.putNextEntry(new ZipEntry(name));
+        zipOutputStream.write(content.getBytes(StandardCharsets.UTF_8));
+        zipOutputStream.closeEntry();
     }
 }

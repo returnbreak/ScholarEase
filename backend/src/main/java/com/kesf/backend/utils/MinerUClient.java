@@ -99,6 +99,22 @@ public class MinerUClient {
     /**
      * 获取指定批次的 MinerU 文档解析结果。
      */
+    public byte[] downloadFullZip(String fullZipUrl) {
+        if (!StringUtils.hasText(fullZipUrl)) {
+            throw minerUFailed("MinerU full ZIP URL is empty");
+        }
+
+        HttpRequest request = HttpRequest.newBuilder(URI.create(fullZipUrl))
+                .timeout(REQUEST_TIMEOUT)
+                .GET()
+                .build();
+        HttpResponse<byte[]> response = sendBytes(request);
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw minerUFailed("MinerU full ZIP download failed with HTTP " + response.statusCode());
+        }
+        return response.body();
+    }
+
     public BatchFileResult getBatchResult(String batchId, String traceId) {
         requireToken();
 
@@ -183,6 +199,17 @@ public class MinerUClient {
     private HttpResponse<String> send(HttpRequest request) {
         try {
             return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw minerUFailed("MinerU request interrupted");
+        } catch (IOException exception) {
+            throw minerUFailed("MinerU request failed: " + exception.getMessage());
+        }
+    }
+
+    private HttpResponse<byte[]> sendBytes(HttpRequest request) {
+        try {
+            return httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw minerUFailed("MinerU request interrupted");

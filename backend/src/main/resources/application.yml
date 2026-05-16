@@ -35,8 +35,8 @@ minio:
   bucketName: literatures
   publicUrl: http://localhost:9000
   storage:
-    originalPrefix: papers/{paperId}/original/
-    parsedPrefix: papers/{paperId}/mineru/
+    originalPrefix: uploads/{traceId}/original/
+    parsedPrefix: uploads/{traceId}/mineru/
 logging:
   file:
     name: ${LOG_FILE:../logs/scholarease-backend.log}

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kesf.backend.config.MinerUProperties;
+import com.kesf.backend.config.MinioProperties;
 import com.kesf.backend.dto.DuplicatePaperDataDTO;
 import com.kesf.backend.dto.PageResultDTO;
 import com.kesf.backend.dto.PaperSummaryDTO;
@@ -15,6 +16,7 @@ import com.kesf.backend.exception.BusinessException;
 import com.kesf.backend.exception.ErrorCode;
 import com.kesf.backend.mapper.PaperMapper;
 import com.kesf.backend.service.DocumentService;
+import com.kesf.backend.service.ObjectStorageService;
 import com.kesf.backend.service.PaperUploadParseProgressService;
 import com.kesf.backend.service.ZoteroImportService;
 import com.kesf.backend.utils.Md5Utils;
@@ -24,7 +26,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -32,6 +37,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +57,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final MinerUClient minerUClient;
     private final MinerUProperties minerUProperties;
     private final ZoteroImportService zoteroImportService;
+    private final ObjectStorageService objectStorageService;
+    private final MinioProperties minioProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -125,17 +134,21 @@ public class DocumentServiceImpl implements DocumentService {
 
     private MinerUParseResult parseWithMinerU(MultipartFile file, UploadDocumentDTO uploadDocument) {
         try {
+            String traceId = uploadDocument.getTraceId();
+            String fileName = safeFileName(uploadDocument.getFileName());
+            byte[] pdfBytes = readFileBytes(file);
+            uploadOriginalPdf(pdfBytes, traceId, fileName);
             MinerUParseResult parseResult = parseByMinerU(
-                    file,
-                    uploadDocument.getTraceId(),
-                    safeFileName(uploadDocument.getFileName())
+                    pdfBytes,
+                    traceId,
+                    fileName
             );
             zoteroImportService.importParsedPaper(
-                    readFileBytes(file),
-                    safeFileName(uploadDocument.getFileName()),
-                    uploadDocument.getTraceId()
+                    pdfBytes,
+                    fileName,
+                    traceId
             );
-            progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_PARSED_VALUE);
+            progressService.updateParseStatus(traceId, PARSE_STATUS_PARSED_VALUE);
             return parseResult;
         } catch (BusinessException exception) {
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
@@ -146,12 +159,11 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    private MinerUParseResult parseByMinerU(MultipartFile file, String traceId, String fileName) {
+    private MinerUParseResult parseByMinerU(byte[] fileBytes, String traceId, String fileName) {
         if (!minerUProperties.isEnabled()) {
             throw minerUFailed("MinerU parsing is disabled");
         }
 
-        byte[] fileBytes = readFileBytes(file);
         MinerUClient.SignedUpload signedUpload = minerUClient.requestSignedUploadUrl(fileName, traceId);
         minerUClient.uploadToSignedUrl(signedUpload.signedUrl(), fileBytes);
 
@@ -164,6 +176,8 @@ public class DocumentServiceImpl implements DocumentService {
                 if (!StringUtils.hasText(result.fullZipUrl())) {
                     throw minerUFailed("MinerU finished without full_zip_url");
                 }
+                byte[] fullZipBytes = minerUClient.downloadFullZip(result.fullZipUrl());
+                uploadMinerUArtifacts(fullZipBytes, traceId);
                 return new MinerUParseResult(signedUpload.batchId(), result.fullZipUrl());
             }
 
@@ -187,6 +201,133 @@ public class DocumentServiceImpl implements DocumentService {
         } catch (IOException exception) {
             throw new BusinessException(ErrorCode.UPLOAD_FAILED, "Failed to read uploaded file");
         }
+    }
+
+    private void uploadOriginalPdf(byte[] pdfBytes, String traceId, String fileName) {
+        objectStorageService.putObject(
+                originalPdfObjectKey(traceId, fileName),
+                pdfBytes,
+                "application/pdf"
+        );
+    }
+
+    /**
+     * 解压 MinerU 返回的 ZIP 包，并将其中的关键解析产物上传到对象存储（如 MinIO）
+     *
+     * @param fullZipBytes MinerU 返回的完整 ZIP 文件的字节数组
+     * @param traceId      当前上传流程的追踪 ID
+     */
+    private void uploadMinerUArtifacts(byte[] fullZipBytes, String traceId) {
+        // 标记是否成功提取到了核心文件 full.md
+        boolean hasFullMarkdown = false;
+        // 标记是否成功提取到了核心文件 content_list_v2.json
+        boolean hasContentListV2 = false;
+        
+        // 使用 try-with-resources 自动关闭流，将字节数组转换为 ZIP 输入流以供读取
+        try (ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(fullZipBytes))) {
+            ZipEntry entry;
+            // 遍历 ZIP 包中的每一个条目（文件或目录）
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                // 跳过目录，只处理实际文件
+                if (entry.isDirectory()) {
+                    continue;
+                }
+
+                // 获取经过安全校验后的相对文件路径（防止 Zip Slip 路径穿越漏洞）
+                String relativeName = safeZipEntryName(entry);
+                String storageName = minerUArtifactStorageName(relativeName);
+                // 过滤不需要的文件，判断当前文件是否是我们需要的解析产物
+                if (!StringUtils.hasText(storageName)) {
+                    continue;
+                }
+
+                // 读取当前 ZIP 文件条目的完整内容为字节数组
+                byte[] content = readZipEntry(zipInputStream);
+                // 调用对象存储服务，将文件上传到 MinIO
+                // 存储路径由 traceId 和相对路径组合而成，contentType 则根据文件后缀推断
+                objectStorageService.putObject(
+                        minerUArtifactObjectKey(traceId, storageName),
+                        content,
+                        contentType(storageName)
+                );
+                // 检查当前处理的文件是否为必备的核心产物，并更新标志位
+                hasFullMarkdown = hasFullMarkdown || "full.md".equals(storageName);
+                hasContentListV2 = hasContentListV2 || "content_list_v2.json".equals(storageName);
+            }
+        } catch (IOException exception) {
+            // 捕获解压过程中的 IO 异常并转化为业务异常
+            throw minerUFailed("MinerU full ZIP extraction failed: " + exception.getMessage());
+        }
+
+        // 校验产物完整性：如果缺失全量 Markdown 或核心内容列表 JSON，则视为解析异常/失败
+        if (!hasFullMarkdown || !hasContentListV2) {
+            throw minerUFailed("MinerU full ZIP missing required artifacts");
+        }
+    }
+
+    private byte[] readZipEntry(ZipInputStream zipInputStream) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        zipInputStream.transferTo(outputStream);
+        return outputStream.toByteArray();
+    }
+
+    private String safeZipEntryName(ZipEntry entry) {
+        String entryName = entry.getName().replace('\\', '/');
+        if ("..".equals(entryName) || entryName.startsWith("../") || entryName.contains("/../")) {
+            throw minerUFailed("MinerU full ZIP contains unsafe entry: " + entry.getName());
+        }
+        Path normalizedPath = Path.of(entryName).normalize();
+        if (normalizedPath.isAbsolute() || normalizedPath.startsWith("..")) {
+            throw minerUFailed("MinerU full ZIP contains unsafe entry: " + entry.getName());
+        }
+        return normalizedPath.toString().replace('\\', '/');
+    }
+
+    private String minerUArtifactStorageName(String relativeName) {
+        String fileName = StringUtils.getFilename(relativeName);
+        if ("full.md".equals(fileName)) {
+            return "full.md";
+        }
+        if ("content_list_v2.json".equals(fileName)
+                || (StringUtils.hasText(fileName) && fileName.endsWith("_content_list_v2.json"))) {
+            return "content_list_v2.json";
+        }
+        return null;
+    }
+
+    private String minerUArtifactObjectKey(String traceId, String relativeName) {
+        String prefix = minioProperties.getStorage().getParsedPrefix()
+                .replace("{traceId}", safeTraceId(traceId));
+        if (!prefix.endsWith("/")) {
+            prefix = prefix + "/";
+        }
+        return prefix + relativeName;
+    }
+
+    private String originalPdfObjectKey(String traceId, String fileName) {
+        String prefix = minioProperties.getStorage().getOriginalPrefix()
+                .replace("{traceId}", safeTraceId(traceId));
+        if (!prefix.endsWith("/")) {
+            prefix = prefix + "/";
+        }
+        return prefix + safeFileName(fileName);
+    }
+
+    private String contentType(String relativeName) {
+        String lowerName = relativeName.toLowerCase(Locale.ROOT);
+        if (lowerName.endsWith(".md")) {
+            return "text/markdown; charset=utf-8";
+        }
+        if (lowerName.endsWith(".json")) {
+            return "application/json";
+        }
+        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (lowerName.endsWith(".png")) {
+            return "image/png";
+        }
+        return "application/octet-stream";
     }
 
     private void sleepBeforeNextMinerUPoll(String state) {
@@ -326,6 +467,13 @@ public class DocumentServiceImpl implements DocumentService {
     private String safeFileName(String fileName) {
         String safeName = StringUtils.getFilename(fileName);
         return StringUtils.hasText(safeName) ? safeName : fileName;
+    }
+
+    private String safeTraceId(String traceId) {
+        if (!StringUtils.hasText(traceId)) {
+            return "unknown";
+        }
+        return traceId.replaceAll("[^A-Za-z0-9_-]", "-");
     }
 
     private String trimToNull(String value) {
