@@ -8,6 +8,7 @@ import com.kesf.backend.config.MinerUProperties;
 import com.kesf.backend.config.MinioProperties;
 import com.kesf.backend.dto.DuplicatePaperDataDTO;
 import com.kesf.backend.dto.PageResultDTO;
+import com.kesf.backend.dto.PaperDetailDTO;
 import com.kesf.backend.dto.PaperSummaryDTO;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
@@ -167,6 +168,15 @@ public class DocumentServiceImpl implements DocumentService {
                 resultPage.getTotal(),
                 resultPage.getCurrent() < resultPage.getPages()
         );
+    }
+
+    @Override
+    public PaperDetailDTO getDocument(Long paperId) {
+        PaperEntity paper = paperMapper.selectById(paperId);
+        if (paper == null) {
+            throw new BusinessException(ErrorCode.PAPER_NOT_FOUND);
+        }
+        return toDetail(paper);
     }
 
     @Override
@@ -614,7 +624,28 @@ public class DocumentServiceImpl implements DocumentService {
         summary.setYear(paper.getYear());
         summary.setVenue(paper.getVenue());
         summary.setDoi(paper.getDoi());
+        summary.setKeywords(parseJsonArray(paper.getKeywordsJson()));
         return summary;
+    }
+
+    private PaperDetailDTO toDetail(PaperEntity paper) {
+        PaperDetailDTO detail = new PaperDetailDTO();
+        detail.setPaperId(paper.getPaperId());
+        detail.setPaperMd5(paper.getPaperMd5());
+        detail.setFileName(paper.getFileName());
+        detail.setFileSizeBytes(paper.getFileSizeBytes());
+        detail.setTitle(paper.getTitle());
+        List<String> authors = parseJsonArray(paper.getAuthorsJson());
+        detail.setAuthors(authors);
+        detail.setAuthorText(String.join(", ", authors));
+        detail.setKeywords(parseJsonArray(paper.getKeywordsJson()));
+        detail.setLanguage(paper.getLanguage());
+        detail.setStorageLocation("");
+        detail.setUploadTime(toOffsetDateTime(paper));
+        detail.setYear(paper.getYear());
+        detail.setVenue(paper.getVenue());
+        detail.setDoi(paper.getDoi());
+        return detail;
     }
 
     private List<String> parseJsonArray(String json) {

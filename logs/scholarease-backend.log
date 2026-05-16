@@ -4041,3 +4041,168 @@ Caused by: org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededExce
 2026-05-16T16:50:55.561+08:00 DEBUG 32508 --- [http-nio-8080-exec-4] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
 2026-05-16T16:50:55.562+08:00 DEBUG 32508 --- [http-nio-8080-exec-4] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
 2026-05-16T16:50:55.564+08:00 DEBUG 32508 --- [http-nio-8080-exec-4] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T16:59:52.627+08:00 DEBUG 32508 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T16:59:52.630+08:00 DEBUG 32508 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T16:59:52.638+08:00 DEBUG 32508 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T16:59:52.642+08:00 DEBUG 32508 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T16:59:52.643+08:00 DEBUG 32508 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T16:59:52.646+08:00 DEBUG 32508 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T17:01:02.214+08:00 DEBUG 32508 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T17:01:02.215+08:00 DEBUG 32508 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T17:01:02.216+08:00 DEBUG 32508 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T17:01:02.218+08:00 DEBUG 32508 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T17:01:02.218+08:00 DEBUG 32508 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T17:01:02.220+08:00 DEBUG 32508 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T17:03:18.497+08:00  INFO 32508 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-16T17:03:18.506+08:00  INFO 32508 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-16T17:03:18.562+08:00  INFO 32508 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-16T17:03:18.572+08:00  INFO 32508 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-16T17:03:23.651+08:00  INFO 27780 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 27780 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-16T17:03:23.652+08:00 DEBUG 27780 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-16T17:03:23.653+08:00  INFO 27780 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-16T17:03:24.161+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T17:03:24.163+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-16T17:03:24.176+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-16T17:03:24.180+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T17:03:24.180+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-16T17:03:24.183+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 1 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-16T17:03:24.188+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T17:03:24.189+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-16T17:03:24.197+08:00  INFO 27780 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 1 ms. Found 0 Redis repository interfaces.
+2026-05-16T17:03:24.593+08:00  INFO 27780 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-16T17:03:24.604+08:00  INFO 27780 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-16T17:03:24.605+08:00  INFO 27780 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-16T17:03:24.654+08:00  INFO 27780 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-16T17:03:24.654+08:00  INFO 27780 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 963 ms
+2026-05-16T17:03:25.313+08:00  INFO 27780 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@a7e2d9d
+2026-05-16T17:03:25.828+08:00  INFO 27780 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-16T17:03:25.833+08:00  INFO 27780 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 2.593 seconds (process running for 2.975)
+2026-05-16T17:03:27.441+08:00  INFO 27780 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-16T17:03:27.442+08:00  INFO 27780 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-16T17:03:27.443+08:00  INFO 27780 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-05-16T17:03:27.615+08:00  INFO 27780 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-16T17:03:27.882+08:00  INFO 27780 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@54651db6
+2026-05-16T17:03:27.884+08:00  INFO 27780 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-16T17:03:27.894+08:00 DEBUG 27780 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T17:03:27.923+08:00 DEBUG 27780 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T17:03:27.966+08:00 DEBUG 27780 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T17:03:27.980+08:00 DEBUG 27780 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T17:03:27.984+08:00 DEBUG 27780 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T17:03:27.988+08:00 DEBUG 27780 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T17:08:16.687+08:00 DEBUG 27780 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T17:08:16.689+08:00 DEBUG 27780 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T17:08:16.691+08:00 DEBUG 27780 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T17:08:16.692+08:00 DEBUG 27780 --- [http-nio-8080-exec-5] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T17:08:16.692+08:00 DEBUG 27780 --- [http-nio-8080-exec-5] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T17:08:16.693+08:00 DEBUG 27780 --- [http-nio-8080-exec-5] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T17:08:28.562+08:00 DEBUG 27780 --- [http-nio-8080-exec-4] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T17:08:28.564+08:00 DEBUG 27780 --- [http-nio-8080-exec-4] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T17:08:28.567+08:00 DEBUG 27780 --- [http-nio-8080-exec-4] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T17:08:28.569+08:00 DEBUG 27780 --- [http-nio-8080-exec-4] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T17:08:28.569+08:00 DEBUG 27780 --- [http-nio-8080-exec-4] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T17:08:28.571+08:00 DEBUG 27780 --- [http-nio-8080-exec-4] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T17:08:55.950+08:00 DEBUG 27780 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T17:08:55.951+08:00 DEBUG 27780 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T17:08:55.954+08:00 DEBUG 27780 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T17:08:55.955+08:00 DEBUG 27780 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T17:08:55.956+08:00 DEBUG 27780 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T17:08:55.957+08:00 DEBUG 27780 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T17:09:28.960+08:00 DEBUG 27780 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T17:09:28.961+08:00 DEBUG 27780 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T17:09:28.963+08:00 DEBUG 27780 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T17:09:28.964+08:00 DEBUG 27780 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T17:09:28.964+08:00 DEBUG 27780 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T17:09:28.965+08:00 DEBUG 27780 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T17:09:44.720+08:00 DEBUG 27780 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T17:09:44.721+08:00 DEBUG 27780 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T17:09:44.723+08:00 DEBUG 27780 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T17:09:44.725+08:00 DEBUG 27780 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T17:09:44.725+08:00 DEBUG 27780 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T17:09:44.727+08:00 DEBUG 27780 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T18:20:49.447+08:00 DEBUG 27780 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T18:20:49.448+08:00 DEBUG 27780 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T18:20:49.455+08:00 DEBUG 27780 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 1
+2026-05-16T18:20:49.458+08:00 DEBUG 27780 --- [http-nio-8080-exec-2] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?))
+2026-05-16T18:20:49.459+08:00 DEBUG 27780 --- [http-nio-8080-exec-2] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: f4d2ababed98cd147de42b8122b43ac3(String)
+2026-05-16T18:20:49.462+08:00 DEBUG 27780 --- [http-nio-8080-exec-2] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 1
+2026-05-16T18:20:52.356+08:00  INFO 27780 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-16T18:20:52.365+08:00  INFO 27780 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-16T18:20:52.423+08:00  INFO 27780 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-16T18:20:52.426+08:00  INFO 27780 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-16T18:20:57.675+08:00  INFO 35208 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 35208 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-16T18:20:57.677+08:00 DEBUG 35208 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-16T18:20:57.678+08:00  INFO 35208 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-16T18:20:58.150+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T18:20:58.151+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-16T18:20:58.164+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 10 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-16T18:20:58.168+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T18:20:58.168+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-16T18:20:58.171+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-16T18:20:58.178+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T18:20:58.178+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-16T18:20:58.186+08:00  INFO 35208 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-16T18:20:58.509+08:00  INFO 35208 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-16T18:20:58.519+08:00  INFO 35208 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-16T18:20:58.520+08:00  INFO 35208 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-16T18:20:58.567+08:00  INFO 35208 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-16T18:20:58.567+08:00  INFO 35208 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 857 ms
+2026-05-16T18:20:59.405+08:00  INFO 35208 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@a7e2d9d
+2026-05-16T18:20:59.861+08:00  INFO 35208 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-16T18:20:59.867+08:00  INFO 35208 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 2.596 seconds (process running for 3.022)
+2026-05-16T18:21:01.101+08:00  INFO 35208 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-16T18:21:01.102+08:00  INFO 35208 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-16T18:21:01.103+08:00  INFO 35208 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-05-16T18:21:01.176+08:00  INFO 35208 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-16T18:21:01.461+08:00  INFO 35208 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2d74e459
+2026-05-16T18:21:01.465+08:00  INFO 35208 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-16T18:21:01.481+08:00 DEBUG 35208 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-16T18:21:01.541+08:00 DEBUG 35208 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 13(Long)
+2026-05-16T18:21:01.639+08:00 DEBUG 35208 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-16T18:21:10.919+08:00 DEBUG 35208 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-16T18:21:10.919+08:00 DEBUG 35208 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 13(Long)
+2026-05-16T18:21:10.921+08:00 DEBUG 35208 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-16T18:21:28.138+08:00 DEBUG 35208 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-16T18:21:28.139+08:00 DEBUG 35208 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 13(Long)
+2026-05-16T18:21:28.141+08:00 DEBUG 35208 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-16T18:21:41.171+08:00 DEBUG 35208 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-16T18:21:41.172+08:00 DEBUG 35208 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 13(Long)
+2026-05-16T18:21:41.178+08:00 DEBUG 35208 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-16T18:22:00.767+08:00 DEBUG 35208 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-16T18:22:00.768+08:00 DEBUG 35208 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 13(Long)
+2026-05-16T18:22:00.771+08:00 DEBUG 35208 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-16T18:22:38.412+08:00  INFO 35208 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-16T18:22:38.417+08:00  INFO 35208 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-16T18:22:38.430+08:00  INFO 35208 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-16T18:22:38.433+08:00  INFO 35208 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-16T18:22:40.848+08:00  INFO 35592 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 35592 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-16T18:22:40.850+08:00 DEBUG 35592 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-16T18:22:40.850+08:00  INFO 35592 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-16T18:22:41.263+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T18:22:41.264+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-16T18:22:41.277+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-16T18:22:41.281+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T18:22:41.281+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-16T18:22:41.285+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-16T18:22:41.291+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T18:22:41.291+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-16T18:22:41.298+08:00  INFO 35592 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-16T18:22:41.604+08:00  INFO 35592 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-16T18:22:41.614+08:00  INFO 35592 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-16T18:22:41.614+08:00  INFO 35592 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-16T18:22:41.655+08:00  INFO 35592 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-16T18:22:41.655+08:00  INFO 35592 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 776 ms
+2026-05-16T18:22:42.193+08:00  INFO 35592 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@a7e2d9d
+2026-05-16T18:22:42.569+08:00  INFO 35592 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-16T18:22:42.574+08:00  INFO 35592 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 2.086 seconds (process running for 2.399)
+2026-05-16T18:22:43.290+08:00  INFO 35592 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-16T18:22:43.292+08:00  INFO 35592 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-16T18:22:43.298+08:00  INFO 35592 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
+2026-05-16T18:22:43.422+08:00  INFO 35592 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-16T18:22:43.682+08:00  INFO 35592 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@4aa9f41
+2026-05-16T18:22:43.685+08:00  INFO 35592 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-16T18:22:43.692+08:00 DEBUG 35592 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-16T18:22:43.725+08:00 DEBUG 35592 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 13(Long)
+2026-05-16T18:22:43.749+08:00 DEBUG 35592 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-16T18:22:49.342+08:00 DEBUG 35592 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-16T18:22:49.343+08:00 DEBUG 35592 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 13(Long)
+2026-05-16T18:22:49.344+08:00 DEBUG 35592 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1

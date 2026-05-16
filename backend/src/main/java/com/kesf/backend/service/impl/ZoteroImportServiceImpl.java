@@ -104,32 +104,56 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
                 recognized.parentItemKey(), collectionName);
     }
 
+    /**
+     * 将指定的条目移至 Zotero 回收站
+     *
+     * @param itemKey 要删除的 Zotero 条目唯一 Key
+     */
     @Override
     public void deleteItem(String itemKey) {
+        // 检查 Zotero 功能是否在配置中开启，未开启则抛出异常
         if (!properties.isEnabled()) {
             throw zoteroFailed("Zotero import is disabled");
         }
+        // 如果传入的 itemKey 为空或仅包含空白字符，直接返回，无需发起无意义请求
         if (!StringUtils.hasText(itemKey)) {
             return;
         }
+        
+        // 获取安全的 itemKey，过滤掉可能导致异常或注入的非法字符
         String safeKey = safeItemKey(itemKey);
+        
+        // 构造要发送到 Zotero 本地服务端的 JSON 请求体
+        // "operation": "trash_item" 指明了当前操作为将条目移入回收站
         Map<String, Object> requestBody = Map.of("operation", "trash_item", "item_key", safeKey);
+        
+        // 组装 HTTP POST 请求，指向提供写操作支持的 /write 接口
         HttpRequest request = HttpRequest.newBuilder(apiUri("/write"))
-                .timeout(properties.getRequestTimeout())
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(writeJson(requestBody)))
+                .timeout(properties.getRequestTimeout()) // 设置请求超时时间
+                .header("Content-Type", "application/json") // 声明发送的数据格式为 JSON
+                .POST(HttpRequest.BodyPublishers.ofString(writeJson(requestBody))) // 将请求体转换为 JSON 字符串并放入请求
                 .build();
+                
+        // 发送 HTTP 请求并获取响应
         HttpResponse<String> response = send(request);
+        
+        // 检查 HTTP 响应状态码，如果不为 200 (OK)，则抛出删除失败的异常
         if (response.statusCode() != 200) {
             throw zoteroFailed("Zotero trash item " + safeKey + " failed with HTTP " + response.statusCode());
         }
+        
         JsonNode result;
         try {
+            // 尝试将响应体解析为 JSON 树节点
             result = objectMapper.readTree(response.body());
         } catch (JsonProcessingException e) {
+            // 如果解析 JSON 失败（格式不正确），则抛出异常
             throw zoteroFailed("Zotero write response is not valid JSON");
         }
+        
+        // 检查业务处理结果：判断 JSON 中的 "success" 字段是否为 true
         if (!result.path("success").asBoolean(false)) {
+            // 如果删除未成功，提取错误信息并抛出包含了详细信息的异常
             throw zoteroFailed("Zotero trash item " + safeKey + " failed: " + result.path("error").asText("unknown"));
         }
     }

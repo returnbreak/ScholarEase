@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Close,
   Delete,
-  Download,
   Filter,
   Refresh,
   Search,
@@ -19,8 +18,10 @@ import { ElMessageBox } from 'element-plus'
 import {
   deleteDocument,
   DocumentApiError,
+  getDocument,
   listDocuments,
   type DuplicatePaperData,
+  type PaperDetail,
   type PaperSummary,
   uploadDocument,
 } from '@/api/documents'
@@ -59,6 +60,9 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const totalDocuments = ref(0)
 const hasNextPage = ref(false)
+const previewVisible = ref(false)
+const previewPaper = ref<PaperDetail | null>(null)
+const previewLoading = ref(false)
 
 // 只允许 PDF 进入上传队列；其它类型文件在选择阶段就直接忽略，不生成预览，也不进入后续逻辑。
 const uploadablePreviews = computed(() =>
@@ -294,6 +298,20 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback
 }
 
+async function handlePreview(paperId: number) {
+  previewVisible.value = true
+  previewLoading.value = true
+  previewPaper.value = null
+  try {
+    previewPaper.value = await getDocument(paperId)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '文献详情加载失败'))
+    previewVisible.value = false
+  } finally {
+    previewLoading.value = false
+  }
+}
+
 async function handleDeleteDocument(paperId: number, fileName: string) {
   try {
     await ElMessageBox.confirm(
@@ -472,6 +490,7 @@ onBeforeUnmount(() => {
               <th>文献文件名称</th>
               <th>标题名称</th>
               <th>作者姓名</th>
+              <th>关键词</th>
               <th>存储位置</th>
               <th>上传日期</th>
               <th>操作</th>
@@ -489,15 +508,13 @@ onBeforeUnmount(() => {
               </td>
               <td>{{ item.title }}</td>
               <td>{{ item.authorText || '未识别' }}</td>
+              <td>{{ item.keywords?.length ? item.keywords.join('、') : '-' }}</td>
               <td>{{ item.storageLocation || '-' }}</td>
               <td>{{ formatUploadDate(item.uploadTime) }}</td>
               <td>
                 <div class="action-group" :aria-label="`${item.fileName} 操作`">
                   <el-tooltip content="预览" placement="top">
-                    <el-button link :icon="View" aria-label="预览" />
-                  </el-tooltip>
-                  <el-tooltip content="下载" placement="top">
-                    <el-button link :icon="Download" aria-label="下载" />
+                    <el-button link :icon="View" aria-label="预览" @click="handlePreview(item.paperId)" />
                   </el-tooltip>
                   <el-tooltip content="收藏" placement="top">
                     <el-button link :icon="Star" aria-label="收藏" />
@@ -516,7 +533,7 @@ onBeforeUnmount(() => {
           </tbody>
           <tbody v-else>
             <tr>
-              <td class="empty-table-cell" colspan="6">
+              <td class="empty-table-cell" colspan="7">
                 {{ isLoadingDocuments ? '正在加载文献列表' : '暂无文献' }}
               </td>
             </tr>
@@ -542,6 +559,58 @@ onBeforeUnmount(() => {
         </div>
       </footer>
     </section>
+
+    <el-dialog
+      v-model="previewVisible"
+      title="文献详情"
+      width="640px"
+      :close-on-click-modal="false"
+      aria-label="文献详情预览"
+    >
+      <div v-if="previewLoading" class="preview-loading">加载中...</div>
+      <template v-else-if="previewPaper">
+        <div class="preview-field">
+          <span class="preview-label">文件名称</span>
+          <span>{{ previewPaper.fileName }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">文件类型</span>
+          <span>{{ previewPaper.fileType }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">文件大小</span>
+          <span>{{ (previewPaper.fileSizeBytes / 1024 / 1024).toFixed(1) }} MB</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">标题</span>
+          <span>{{ previewPaper.title || '-' }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">作者</span>
+          <span>{{ previewPaper.authorText || '未识别' }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">关键词</span>
+          <span>{{ previewPaper.keywords?.length ? previewPaper.keywords.join('、') : '-' }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">语言</span>
+          <span>{{ previewPaper.language || '-' }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">年份</span>
+          <span>{{ previewPaper.year ?? '-' }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">期刊 / 会议</span>
+          <span>{{ previewPaper.venue || '-' }}</span>
+        </div>
+        <div class="preview-field">
+          <span class="preview-label">DOI</span>
+          <span>{{ previewPaper.doi || '-' }}</span>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -937,6 +1006,44 @@ onBeforeUnmount(() => {
 .current-page {
   width: 40px;
   padding-inline: 0;
+}
+
+.preview-loading {
+  display: grid;
+  height: 200px;
+  place-items: center;
+  color: #7d7468;
+  font-size: 14px;
+}
+
+.preview-field {
+  display: flex;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e8e0d4;
+}
+
+.preview-field:first-of-type {
+  padding-top: 0;
+}
+
+.preview-field:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.preview-label {
+  width: 110px;
+  flex-shrink: 0;
+  color: #6f675b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.preview-field span:last-child {
+  color: #1d2a23;
+  font-size: 14px;
+  word-break: break-word;
 }
 
 @media (max-width: 920px) {

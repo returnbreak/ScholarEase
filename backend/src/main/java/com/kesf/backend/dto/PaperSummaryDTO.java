@@ -91,4 +91,9 @@ public class PaperSummaryDTO {
      */
     private String doi;
 
+    /**
+     * keywords_json 反序列化后的关键词列表。
+     */
+    private List<String> keywords = new ArrayList<>();
+
 }

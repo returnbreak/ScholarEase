@@ -2,6 +2,7 @@ package com.kesf.backend.controller;
 
 import com.kesf.backend.dto.ApiResponseDTO;
 import com.kesf.backend.dto.PageResultDTO;
+import com.kesf.backend.dto.PaperDetailDTO;
 import com.kesf.backend.dto.PaperSummaryDTO;
 import com.kesf.backend.dto.UploadDocumentDTO;
 import com.kesf.backend.dto.UploadProgressDTO;
@@ -68,6 +69,11 @@ public class DocumentController {
                 documentService.uploadDocument(file, uploadDocument),
                 uploadDocument.getTraceId()
         );
+    }
+
+    @GetMapping("/{paperId}")
+    public ApiResponseDTO<PaperDetailDTO> getDocument(@PathVariable Long paperId) {
+        return ApiResponseDTO.success(documentService.getDocument(paperId));
     }
 
     @DeleteMapping("/{paperId}")

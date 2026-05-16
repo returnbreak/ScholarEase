@@ -20,6 +20,7 @@ export type PaperSummary = {
   title: string
   authors: string[]
   authorText: string
+  keywords: string[]
   storageLocation: string
   uploadTime: string
   year?: number | null
@@ -53,6 +54,10 @@ export type UploadProgress = {
   submissionTime: string
   parseStatus: ParseStatus
   fullZipUrl?: string | null
+}
+
+export type PaperDetail = PaperSummary & {
+  language?: string | null
 }
 
 export type ListDocumentsParams = {
@@ -166,6 +171,14 @@ export async function deleteDocument(paperId: number) {
     { validateStatus: () => true },
   )
   return parseApiResponse(response)
+}
+
+export async function getDocument(paperId: number) {
+  const response = await axios.get<ApiResponse<PaperDetail> | null>(
+    buildApiUrl(`/documents/${paperId}`),
+    { validateStatus: () => true },
+  )
+  return parseApiResponse<PaperDetail>(response)
 }
 
 export async function listDocuments(params: ListDocumentsParams = {}) {
