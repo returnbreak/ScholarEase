@@ -15,6 +15,7 @@ import com.kesf.backend.utils.MinerUClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
@@ -86,6 +87,20 @@ class DocumentServiceImplTests {
                 .thenReturn(new MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
         when(minerUClient.downloadFullZip("https://mineru.example/full.zip"))
                 .thenReturn(minerUZipBytes());
+        when(zoteroImportService.importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001"))
+                .thenReturn(new ZoteroImportService.ZoteroImportResult(
+                        "scholarease-trace-001-session",
+                        true,
+                        new ZoteroImportService.ZoteroPaperMetadata(
+                                "The response of flow duration curves to afforestation",
+                                List.of("Patrick N.J. Lane", "Alice E. Best"),
+                                List.of("hydrology"),
+                                "en",
+                                2005,
+                                "Journal of Hydrology",
+                                "10.1016/j.jhydrol.2005.01.006"
+                        )
+                ));
 
         UploadProgressDTO result = documentService.uploadDocument(file, dto);
 
@@ -109,8 +124,21 @@ class DocumentServiceImplTests {
         );
         verifyNoMoreInteractions(objectStorageService);
         verify(zoteroImportService).importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001");
+        ArgumentCaptor<PaperEntity> paperCaptor = ArgumentCaptor.forClass(PaperEntity.class);
+        verify(paperMapper).insert(paperCaptor.capture());
+        PaperEntity insertedPaper = paperCaptor.getValue();
+        assertThat(insertedPaper.getPaperMd5()).isEqualTo(PDF_MD5);
+        assertThat(insertedPaper.getFileName()).isEqualTo("attention.pdf");
+        assertThat(insertedPaper.getFileSizeBytes()).isEqualTo((long) PDF_BYTES.length);
+        assertThat(insertedPaper.getTitle()).isEqualTo("The response of flow duration curves to afforestation");
+        assertThat(insertedPaper.getAuthorsJson()).isEqualTo("[\"Patrick N.J. Lane\",\"Alice E. Best\"]");
+        assertThat(insertedPaper.getKeywordsJson()).isEqualTo("[\"hydrology\"]");
+        assertThat(insertedPaper.getLanguage()).isEqualTo("en");
+        assertThat(insertedPaper.getYear()).isEqualTo(2005);
+        assertThat(insertedPaper.getVenue()).isEqualTo("Journal of Hydrology");
+        assertThat(insertedPaper.getDoi()).isEqualTo("10.1016/j.jhydrol.2005.01.006");
+        assertThat(insertedPaper.getUploadTime()).isEqualTo(LocalDateTime.of(2026, 5, 13, 12, 30, 45));
         verify(progressService).updateParseStatus("trace-001", 2);
-        verify(paperMapper, never()).insert(any(PaperEntity.class));
 
         assertThat(result.getTraceId()).isEqualTo("trace-001");
         assertThat(result.getPaperMd5()).isEqualTo(PDF_MD5);

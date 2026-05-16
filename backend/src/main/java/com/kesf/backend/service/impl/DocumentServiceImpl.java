@@ -81,7 +81,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         progressService.recordUploadProgress(uploadDocument);
-        MinerUParseResult parseResult = parseWithMinerU(file, uploadDocument);
+        MinerUParseResult parseResult = parseWithMinerU(file, uploadDocument, actualPaperMd5, actualFileSizeBytes);
 
         return toUploadProgress(uploadDocument, actualPaperMd5, actualFileSizeBytes, parseResult);
     }
@@ -132,28 +132,69 @@ public class DocumentServiceImpl implements DocumentService {
         );
     }
 
-    private MinerUParseResult parseWithMinerU(MultipartFile file, UploadDocumentDTO uploadDocument) {
+    /**
+     * 协调完整的文档解析流程：
+     * 包括上传原文件至对象存储(MinIO)、调用 MinerU 进行 PDF 解析、调用 Zotero 提取文献元数据，
+     * 最后将解析好的元数据保存到数据库，并更新处理进度状态。
+     *
+     * @param file                用户上传的 PDF 原始文件
+     * @param uploadDocument      上传文档的元数据传输对象 (包含 traceId 等信息)
+     * @param actualPaperMd5      实际计算出的文件内容 MD5，用于校验
+     * @param actualFileSizeBytes 实际的文件字节大小
+     * @return MinerUParseResult 包含 MinerU 的 batchId 和解析产物 ZIP 的完整下载链接
+     */
+    private MinerUParseResult parseWithMinerU(
+            MultipartFile file,
+            UploadDocumentDTO uploadDocument,
+            String actualPaperMd5,
+            long actualFileSizeBytes
+    ) {
         try {
+            // 1. 提取业务追踪 ID 与安全的文件名
             String traceId = uploadDocument.getTraceId();
             String fileName = safeFileName(uploadDocument.getFileName());
+            
+            // 2. 读取 PDF 文件的字节数组
             byte[] pdfBytes = readFileBytes(file);
+            
+            // 3. 将用户上传的原始 PDF 文件持久化到对象存储 (MinIO)
             uploadOriginalPdf(pdfBytes, traceId, fileName);
+            
+            // 4. 调用 MinerU 服务进行文档的结构化解析，提取文本、公式和图表等内容
             MinerUParseResult parseResult = parseByMinerU(
                     pdfBytes,
                     traceId,
                     fileName
             );
-            zoteroImportService.importParsedPaper(
+            
+            // 5. 调用 Zotero 服务导入 PDF，识别并提取高质量的学术元数据 (如标题、作者、年份、DOI等)
+            ZoteroImportService.ZoteroImportResult zoteroResult = zoteroImportService.importParsedPaper(
                     pdfBytes,
                     fileName,
                     traceId
             );
+            
+            // 6. 将提取到的 Zotero 元数据与基础文件信息组装为实体类，并保存到数据库
+            paperMapper.insert(toPaperEntity(
+                    uploadDocument,
+                    actualPaperMd5,
+                    actualFileSizeBytes,
+                    fileName,
+                    zoteroResult.metadata()
+            ));
+            
+            // 7. 若一切顺利，更新数据库中该任务的进度状态为“解析完成”
             progressService.updateParseStatus(traceId, PARSE_STATUS_PARSED_VALUE);
+            
             return parseResult;
         } catch (BusinessException exception) {
+            // 若在解析过程中抛出已知的业务异常（例如 Zotero 连接失败、MinerU 超时等）
+            // 将状态更新为“解析失败”，并原样向上抛出以便给前端展示确切的错误提示
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
             throw exception;
         } catch (RuntimeException exception) {
+            // 捕获未知的运行时异常进行兜底处理，更新状态为“解析失败”
+            // 并且将其统一包装为 MinerU 解析失败的业务异常抛出，防止暴露底层的堆栈或敏感细节
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
             throw new BusinessException(ErrorCode.MINERU_PARSE_FAILED, ErrorCode.MINERU_PARSE_FAILED.getMessage());
         }
@@ -401,6 +442,45 @@ public class DocumentServiceImpl implements DocumentService {
         data.put("expectedFileSizeBytes", uploadDocument == null ? null : uploadDocument.getFileSizeBytes());
         data.put("actualFileSizeBytes", actualFileSizeBytes);
         return new BusinessException(ErrorCode.FILE_METADATA_MISMATCH, ErrorCode.FILE_METADATA_MISMATCH.getMessage(), data);
+    }
+
+    private PaperEntity toPaperEntity(
+            UploadDocumentDTO uploadDocument,
+            String actualPaperMd5,
+            long actualFileSizeBytes,
+            String fileName,
+            ZoteroImportService.ZoteroPaperMetadata metadata
+    ) {
+        PaperEntity paper = new PaperEntity();
+        paper.setPaperMd5(actualPaperMd5);
+        paper.setFileName(fileName);
+        paper.setFileSizeBytes(actualFileSizeBytes);
+        paper.setTitle(StringUtils.hasText(metadata.title()) ? metadata.title() : titleFromFileName(fileName));
+        paper.setAuthorsJson(writeJsonArray(metadata.authors()));
+        paper.setKeywordsJson(writeJsonArray(metadata.keywords()));
+        paper.setLanguage(StringUtils.hasText(metadata.language()) ? metadata.language() : "en");
+        paper.setYear(metadata.year());
+        paper.setVenue(metadata.venue());
+        paper.setDoi(metadata.doi());
+        paper.setUploadTime(uploadDocument.getSubmissionTime().toLocalDateTime());
+        return paper;
+    }
+
+    private String writeJsonArray(List<String> values) {
+        try {
+            return objectMapper.writeValueAsString(values == null ? List.of() : values);
+        } catch (IOException exception) {
+            throw new BusinessException(ErrorCode.UPLOAD_FAILED, "Failed to serialize paper metadata");
+        }
+    }
+
+    private String titleFromFileName(String fileName) {
+        if (!StringUtils.hasText(fileName)) {
+            return "Uploaded PDF";
+        }
+        return fileName.toLowerCase(Locale.ROOT).endsWith(".pdf")
+                ? fileName.substring(0, fileName.length() - 4)
+                : fileName;
     }
 
     private UploadProgressDTO toUploadProgress(

@@ -2657,3 +2657,178 @@ Unconditional classes:
 2026-05-16T10:36:43.325+08:00 DEBUG 10652 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
 2026-05-16T10:36:43.326+08:00 DEBUG 10652 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
 2026-05-16T10:36:43.327+08:00 DEBUG 10652 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-16T11:41:14.131+08:00  INFO 26444 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 26444 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-16T11:41:14.132+08:00 DEBUG 26444 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-16T11:41:14.133+08:00  INFO 26444 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-16T11:41:14.549+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:41:14.550+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-16T11:41:14.563+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 10 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-16T11:41:14.566+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:41:14.567+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-16T11:41:14.570+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-16T11:41:14.576+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:41:14.577+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-16T11:41:14.583+08:00  INFO 26444 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-16T11:41:14.923+08:00  INFO 26444 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-16T11:41:14.935+08:00  INFO 26444 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-16T11:41:14.936+08:00  INFO 26444 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-16T11:41:14.988+08:00  INFO 26444 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-16T11:41:14.988+08:00  INFO 26444 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 826 ms
+2026-05-16T11:41:15.501+08:00  INFO 26444 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@4fd4cae3
+2026-05-16T11:41:15.859+08:00  INFO 26444 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-16T11:41:15.865+08:00  INFO 26444 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 2.106 seconds (process running for 2.467)
+2026-05-16T11:41:47.714+08:00  INFO 26444 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-16T11:41:47.715+08:00  INFO 26444 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-16T11:41:47.715+08:00  INFO 26444 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 0 ms
+2026-05-16T11:41:47.949+08:00  INFO 26444 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-16T11:41:48.262+08:00  INFO 26444 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@4b6167c8
+2026-05-16T11:41:48.272+08:00  INFO 26444 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-16T11:41:48.299+08:00 DEBUG 26444 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T11:41:48.363+08:00 DEBUG 26444 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T11:41:48.461+08:00 DEBUG 26444 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-16T11:42:23.395+08:00 ERROR 26444 --- [http-nio-8080-exec-2] c.k.b.exception.GlobalExceptionHandler   : Unexpected exception handled: traceId=cdb0eb4368b34457b5fbaea5b032dcd0, method=POST, uri=/api/documents/upload, message=Maximum upload size exceeded
+
+org.springframework.web.multipart.MaxUploadSizeExceededException: Maximum upload size exceeded
+	at org.springframework.web.multipart.support.StandardMultipartHttpServletRequest.handleParseFailure(StandardMultipartHttpServletRequest.java:126) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.springframework.web.multipart.support.StandardMultipartHttpServletRequest.parseRequest(StandardMultipartHttpServletRequest.java:112) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.springframework.web.multipart.support.StandardMultipartHttpServletRequest.<init>(StandardMultipartHttpServletRequest.java:88) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.springframework.web.multipart.support.StandardServletMultipartResolver.resolveMultipart(StandardServletMultipartResolver.java:112) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.springframework.web.servlet.DispatcherServlet.checkMultipart(DispatcherServlet.java:1228) ~[spring-webmvc-6.2.18.jar:6.2.18]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1061) ~[spring-webmvc-6.2.18.jar:6.2.18]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.2.18.jar:6.2.18]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.18.jar:6.2.18]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.18.jar:6.2.18]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.54.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.18.jar:6.2.18]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.54.jar:6.0]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.18.jar:6.2.18]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1797) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: java.lang.IllegalStateException: org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException: The field file exceeds its maximum permitted size of 1048576 bytes.
+	at org.apache.catalina.connector.Request.parseParts(Request.java:2720) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.connector.Request.getParts(Request.java:2534) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.connector.RequestFacade.getParts(RequestFacade.java:770) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.springframework.web.multipart.support.StandardMultipartHttpServletRequest.parseRequest(StandardMultipartHttpServletRequest.java:95) ~[spring-web-6.2.18.jar:6.2.18]
+	... 43 common frames omitted
+Caused by: org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException: The field file exceeds its maximum permitted size of 1048576 bytes.
+	at org.apache.tomcat.util.http.fileupload.impl.FileItemStreamImpl$1.raiseError(FileItemStreamImpl.java:117) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.http.fileupload.util.LimitedInputStream.checkLimit(LimitedInputStream.java:64) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.http.fileupload.util.LimitedInputStream.read(LimitedInputStream.java:160) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at java.base/java.io.FilterInputStream.read(FilterInputStream.java:95) ~[na:na]
+	at org.apache.tomcat.util.http.fileupload.util.Streams.copy(Streams.java:119) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.tomcat.util.http.fileupload.FileUploadBase.parseRequest(FileUploadBase.java:468) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	at org.apache.catalina.connector.Request.parseParts(Request.java:2675) ~[tomcat-embed-core-10.1.54.jar:10.1.54]
+	... 46 common frames omitted
+
+2026-05-16T11:42:23.418+08:00 DEBUG 26444 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T11:42:23.419+08:00 DEBUG 26444 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T11:42:23.421+08:00 DEBUG 26444 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-16T11:45:07.383+08:00  INFO 26444 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-16T11:45:07.387+08:00  INFO 26444 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-16T11:45:07.397+08:00  INFO 26444 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-16T11:45:07.401+08:00  INFO 26444 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-16T11:45:09.909+08:00  INFO 26488 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 26488 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-16T11:45:09.910+08:00 DEBUG 26488 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-16T11:45:09.911+08:00  INFO 26488 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-16T11:45:10.282+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:45:10.283+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-16T11:45:10.294+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 8 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-16T11:45:10.297+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:45:10.297+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-16T11:45:10.300+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-16T11:45:10.306+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:45:10.306+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-16T11:45:10.312+08:00  INFO 26488 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 1 ms. Found 0 Redis repository interfaces.
+2026-05-16T11:45:10.578+08:00  INFO 26488 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-16T11:45:10.588+08:00  INFO 26488 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-16T11:45:10.588+08:00  INFO 26488 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-16T11:45:10.624+08:00  INFO 26488 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-16T11:45:10.625+08:00  INFO 26488 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 688 ms
+2026-05-16T11:45:11.078+08:00  INFO 26488 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@a7e2d9d
+2026-05-16T11:45:11.412+08:00  INFO 26488 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-16T11:45:11.417+08:00  INFO 26488 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 1.829 seconds (process running for 2.121)
+2026-05-16T11:45:34.057+08:00  INFO 26488 --- [http-nio-8080-exec-3] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-16T11:45:34.058+08:00  INFO 26488 --- [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-16T11:45:34.060+08:00  INFO 26488 --- [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-05-16T11:45:34.368+08:00  INFO 26488 --- [http-nio-8080-exec-3] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-16T11:45:34.567+08:00  INFO 26488 --- [http-nio-8080-exec-3] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@798ef1f7
+2026-05-16T11:45:34.569+08:00  INFO 26488 --- [http-nio-8080-exec-3] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-16T11:45:34.581+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE (paper_md5 = ?) LIMIT 1
+2026-05-16T11:45:34.635+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: da9c337d6fb884c0a1e5af924bb7ddf9(String)
+2026-05-16T11:45:34.681+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-16T11:45:34.690+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.m.P.insert                         : ==>  Preparing: INSERT INTO paper_upload_parse_progress ( trace_id, paper_md5, filename, submission_time, parse_status ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-16T11:45:34.695+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.m.P.insert                         : ==> Parameters: e59338e69510413890dbc0a62779feda(String), da9c337d6fb884c0a1e5af924bb7ddf9(String), Baghdadi - 2016 - A New Empirical Model for Radar Scattering from Bare Soil Surfaces.pdf(String), 2026-05-16T11:45:33.980(LocalDateTime), 1(Integer)
+2026-05-16T11:45:34.722+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.m.P.insert                         : <==    Updates: 1
+2026-05-16T11:45:40.648+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.m.P.update                         : ==>  Preparing: UPDATE paper_upload_parse_progress SET parse_status=? WHERE (trace_id = ?)
+2026-05-16T11:45:40.651+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.m.P.update                         : ==> Parameters: 3(Integer), e59338e69510413890dbc0a62779feda(String)
+2026-05-16T11:45:40.658+08:00 DEBUG 26488 --- [http-nio-8080-exec-3] c.k.b.m.P.update                         : <==    Updates: 1
+2026-05-16T11:45:40.665+08:00  WARN 26488 --- [http-nio-8080-exec-3] c.k.b.exception.GlobalExceptionHandler   : Business exception handled: traceId=e59338e69510413890dbc0a62779feda, code=MINERU_PARSE_FAILED, method=POST, uri=/api/documents/upload, message=MinerU batch parse timed out, data=null
+2026-05-16T11:45:40.737+08:00 DEBUG 26488 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-16T11:45:40.738+08:00 DEBUG 26488 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-16T11:45:40.739+08:00 DEBUG 26488 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-16T11:47:50.159+08:00  INFO 26488 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-16T11:47:50.162+08:00  INFO 26488 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-16T11:47:50.173+08:00  INFO 26488 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-16T11:47:50.175+08:00  INFO 26488 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-16T11:47:53.367+08:00  INFO 29340 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 29340 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-16T11:47:53.368+08:00 DEBUG 29340 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-16T11:47:53.369+08:00  INFO 29340 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-16T11:47:53.774+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:47:53.776+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-16T11:47:53.787+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-16T11:47:53.791+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:47:53.791+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-16T11:47:53.793+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 1 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-16T11:47:53.799+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-16T11:47:53.799+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-16T11:47:53.806+08:00  INFO 29340 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 1 ms. Found 0 Redis repository interfaces.
+2026-05-16T11:47:54.122+08:00  INFO 29340 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-16T11:47:54.132+08:00  INFO 29340 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-16T11:47:54.132+08:00  INFO 29340 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-16T11:47:54.172+08:00  INFO 29340 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-16T11:47:54.172+08:00  INFO 29340 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 779 ms
+2026-05-16T11:47:54.593+08:00  INFO 29340 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@a7e2d9d
+2026-05-16T11:47:54.927+08:00  INFO 29340 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-16T11:47:54.932+08:00  INFO 29340 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 1.908 seconds (process running for 2.22)
+2026-05-16T11:47:59.691+08:00  INFO 29340 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-16T11:47:59.692+08:00  INFO 29340 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-16T11:47:59.694+08:00  INFO 29340 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-05-16T11:48:00.174+08:00  INFO 29340 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-16T11:48:00.479+08:00  INFO 29340 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@3e8a3bc9
+2026-05-16T11:48:00.481+08:00  INFO 29340 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-16T11:48:00.488+08:00 DEBUG 29340 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE (paper_md5 = ?) LIMIT 1
+2026-05-16T11:48:00.518+08:00 DEBUG 29340 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: da9c337d6fb884c0a1e5af924bb7ddf9(String)
+2026-05-16T11:48:00.542+08:00 DEBUG 29340 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-16T11:48:00.552+08:00 DEBUG 29340 --- [http-nio-8080-exec-1] c.k.b.m.P.insert                         : ==>  Preparing: INSERT INTO paper_upload_parse_progress ( trace_id, paper_md5, filename, submission_time, parse_status ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-16T11:48:00.556+08:00 DEBUG 29340 --- [http-nio-8080-exec-1] c.k.b.m.P.insert                         : ==> Parameters: 685ec37e11c54487ac2d1c7319feac5a(String), da9c337d6fb884c0a1e5af924bb7ddf9(String), Baghdadi - 2016 - A New Empirical Model for Radar Scattering from Bare Soil Surfaces.pdf(String), 2026-05-16T11:47:59.617(LocalDateTime), 1(Integer)
+2026-05-16T11:48:00.564+08:00 DEBUG 29340 --- [http-nio-8080-exec-1] c.k.b.m.P.insert                         : <==    Updates: 1

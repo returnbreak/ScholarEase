@@ -16,9 +16,13 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Zotero 导入服务实现类
@@ -30,6 +34,8 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
 
     // Zotero 保存独立附件的 API 接口路径
     private static final String SAVE_STANDALONE_ATTACHMENT_PATH = "/connector/saveStandaloneAttachment";
+    private static final String LOCAL_ITEMS_PATH = "/api/users/0/items";
+    private static final Pattern YEAR_PATTERN = Pattern.compile("(\\d{4})");
 
     // Zotero 相关的配置属性（如服务地址、超时时间等）
     private final ZoteroProperties properties;
@@ -62,6 +68,7 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
         String sourceUrl = "scholarease://documents/" + safeTraceId(traceId);
         // 基于 traceId 生成唯一的会话 ID
         String sessionId = sessionId(traceId);
+        long previousLibraryVersion = currentLibraryVersion();
         
         // 构建传递给 Zotero 的元数据 (将会放在 X-Metadata 请求头中)
         Map<String, String> metadata = Map.of(
@@ -88,7 +95,253 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
 
         // 解析返回体以判断 Zotero 是否成功识别了该论文，并封装为结果返回
         boolean canRecognize = readCanRecognize(response.body());
-        return new ZoteroImportResult(sessionId, canRecognize);
+        if (!canRecognize) {
+            throw zoteroFailed("Zotero could not recognize PDF metadata");
+        }
+        ZoteroPaperMetadata paperMetadata = waitForRecognizedMetadata(sourceUrl, previousLibraryVersion);
+        return new ZoteroImportResult(sessionId, true, paperMetadata);
+    }
+
+    /**
+     * 获取 Zotero 本地库当前的最新版本号 (Library Version)。
+     * 通过查询本地项 (limit=1) 并读取 HTTP 响应头中的 Last-Modified-Version 字段实现。
+     * 这用于在后续轮询中，只查询在该版本之后发生变动的条目，以提高效率。
+     */
+    private long currentLibraryVersion() {
+        HttpRequest request = HttpRequest.newBuilder(apiUri(LOCAL_ITEMS_PATH + "?limit=1&format=json"))
+                .timeout(properties.getRequestTimeout())
+                .header("Zotero-API-Version", "3")
+                .GET()
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() != 200) {
+            throw zoteroFailed("Zotero local API failed with HTTP " + response.statusCode());
+        }
+        return response.headers()
+                .firstValue("Last-Modified-Version")
+                .map(this::parseLongOrZero)
+                .orElse(0L);
+    }
+
+    /**
+     * 轮询等待 Zotero 识别 PDF 并在本地生成元数据记录。
+     *
+     * @param sourceUrl              当初传入 Zotero 的自定义来源 URL，用于唯一定位刚才导入的 PDF
+     * @param previousLibraryVersion 导入 PDF 前的库版本号，缩小检索范围
+     * @return 提取并封装好的论文元数据
+     */
+    private ZoteroPaperMetadata waitForRecognizedMetadata(String sourceUrl, long previousLibraryVersion) {
+        int maxAttempts = Math.max(1, properties.getMetadataMaxAttempts());
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            // 尝试查找包含我们 sourceUrl 的附件，并获取其所属的父项目 (即 Zotero 为该 PDF 生成的条目)
+            String parentItemKey = findParentItemKey(sourceUrl, previousLibraryVersion);
+            if (StringUtils.hasText(parentItemKey)) {
+                // 如果找到了父项目，说明识别完成，直接读取其元数据
+                return readParentMetadata(parentItemKey);
+            }
+            // 如果还没找到，并且未达到最大重试次数，则休眠等待后继续下一轮轮询
+            if (attempt < maxAttempts) {
+                sleepBeforeNextMetadataPoll();
+            }
+        }
+        throw zoteroFailed("Zotero metadata was not available after PDF import");
+    }
+
+    /**
+     * 查询在指定库版本之后变动的条目，找到关联特定 sourceUrl 的附件，返回该附件所属的父级条目 Key。
+     *
+     * @param sourceUrl              保存 PDF 附件时传入的唯一标识链接
+     * @param previousLibraryVersion 开始导入操作前的库版本
+     * @return 父条目的唯一 Key，如果未找到或尚未生成则返回 null
+     */
+    private String findParentItemKey(String sourceUrl, long previousLibraryVersion) {
+        HttpRequest request = HttpRequest.newBuilder(apiUri(LOCAL_ITEMS_PATH
+                        + "?since=" + previousLibraryVersion
+                        + "&limit=100&format=json"))
+                .timeout(properties.getRequestTimeout())
+                .header("Zotero-API-Version", "3")
+                .GET()
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() != 200) {
+            throw zoteroFailed("Zotero local API failed with HTTP " + response.statusCode());
+        }
+        try {
+            JsonNode items = objectMapper.readTree(response.body());
+            if (!items.isArray()) {
+                return null;
+            }
+            // 遍历所有最近更新的条目
+            for (JsonNode item : items) {
+                JsonNode data = item.path("data");
+                // 如果该条目是一个附件，且其 url 字段与我们赋予的 sourceUrl 匹配
+                if ("attachment".equals(data.path("itemType").asText())
+                        && sourceUrl.equals(data.path("url").asText())) {
+                    String parentItem = data.path("parentItem").asText(null);
+                    if (StringUtils.hasText(parentItem)) {
+                        return parentItem;
+                    }
+                }
+            }
+            return null;
+        } catch (JsonProcessingException exception) {
+            throw zoteroFailed("Zotero local API returned invalid item JSON");
+        }
+    }
+
+    /**
+     * 通过父级项目的 Key，向 Zotero 请求该条目的完整信息，并转换为系统内部的元数据对象。
+     *
+     * @param parentItemKey 父级项目（即论文文献）的唯一 Key
+     * @return 封装了标题、作者、标签、年份等信息的 ZoteroPaperMetadata 记录
+     */
+    private ZoteroPaperMetadata readParentMetadata(String parentItemKey) {
+        HttpRequest request = HttpRequest.newBuilder(apiUri(LOCAL_ITEMS_PATH + "/" + safeItemKey(parentItemKey) + "?format=json"))
+                .timeout(properties.getRequestTimeout())
+                .header("Zotero-API-Version", "3")
+                .GET()
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() != 200) {
+            throw zoteroFailed("Zotero parent item read failed with HTTP " + response.statusCode());
+        }
+        try {
+            JsonNode data = objectMapper.readTree(response.body()).path("data");
+            // 提取关键元数据并构建不可变对象返回
+            return new ZoteroPaperMetadata(
+                    textOrNull(data, "title"),
+                    creators(data.path("creators")),
+                    tags(data.path("tags")),
+                    defaultLanguage(textOrNull(data, "language")),
+                    yearFromDate(textOrNull(data, "date")),
+                    venue(data),
+                    textOrNull(data, "DOI")
+            );
+        } catch (JsonProcessingException exception) {
+            throw zoteroFailed("Zotero parent item response is not valid JSON");
+        }
+    }
+
+    /**
+     * 解析 Zotero 的 creators 数组，提取所有作者的姓名。
+     */
+    private List<String> creators(JsonNode creators) {
+        if (!creators.isArray()) {
+            return List.of();
+        }
+        List<String> authors = new ArrayList<>();
+        for (JsonNode creator : creators) {
+            // 通常只关心类型为 author 的创作者（排除 editor/translator 等）
+            String creatorType = creator.path("creatorType").asText();
+            if (StringUtils.hasText(creatorType) && !"author".equals(creatorType)) {
+                continue;
+            }
+            // 尝试获取全名
+            String name = textOrNull(creator, "name");
+            if (!StringUtils.hasText(name)) {
+                // 如果没有全名字段，则尝试拼接 firstName 和 lastName
+                name = (creator.path("firstName").asText("") + " " + creator.path("lastName").asText("")).trim();
+            }
+            if (StringUtils.hasText(name)) {
+                authors.add(name);
+            }
+        }
+        return authors;
+    }
+
+    /**
+     * 解析 Zotero 的 tags 数组，将其转化为简单的字符串关键词列表。
+     */
+    private List<String> tags(JsonNode tags) {
+        if (!tags.isArray()) {
+            return List.of();
+        }
+        List<String> keywords = new ArrayList<>();
+        for (JsonNode tag : tags) {
+            String keyword = textOrNull(tag, "tag");
+            if (StringUtils.hasText(keyword)) {
+                keywords.add(keyword);
+            }
+        }
+        return keywords;
+    }
+
+    /**
+     * 利用正则表达式从 Zotero 给出的可能较为复杂的日期字符串（如 "2023-05-12" 或 "May 2023"）中提取 4 位数字作为年份。
+     */
+    private Integer yearFromDate(String date) {
+        if (!StringUtils.hasText(date)) {
+            return null;
+        }
+        Matcher matcher = YEAR_PATTERN.matcher(date);
+        if (!matcher.find()) {
+            return null;
+        }
+        return Integer.parseInt(matcher.group(1));
+    }
+
+    /**
+     * 从不同文献类型可能存在的字段中，查找发表来源（如期刊名称、会议名称、出版社等）。
+     * 根据优先级依次回退尝试。
+     */
+    private String venue(JsonNode data) {
+        // 按优先级排列的潜在来源字段
+        List<String> fields = List.of(
+                "publicationTitle",
+                "conferenceName",
+                "proceedingsTitle",
+                "bookTitle",
+                "websiteTitle",
+                "publisher"
+        );
+        for (String field : fields) {
+            String value = textOrNull(data, field);
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 安全提取 JSON 节点中指定名称字段的文本内容。如果内容为空或只含空格，则返回 null。
+     */
+    private String textOrNull(JsonNode node, String fieldName) {
+        String value = node.path(fieldName).asText(null);
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    /**
+     * 获取文档语言，如果没有记录则默认返回 "en" (英文)。
+     */
+    private String defaultLanguage(String language) {
+        return StringUtils.hasText(language) ? language : "en";
+    }
+
+    /**
+     * 安全将字符串转为 long，用于解析 HTTP Header 中的版本号。若解析失败则回退至 0。
+     */
+    private long parseLongOrZero(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException exception) {
+            return 0L;
+        }
+    }
+
+    /**
+     * 根据配置的间隔时间 (metadataPollInterval) 暂停当前线程，避免高频请求压垮本地 API。
+     */
+    private void sleepBeforeNextMetadataPoll() {
+        if (properties.getMetadataPollInterval().isZero() || properties.getMetadataPollInterval().isNegative()) {
+            return;
+        }
+        try {
+            Thread.sleep(properties.getMetadataPollInterval().toMillis());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw zoteroFailed("Zotero metadata polling interrupted");
+        }
     }
 
     /**
@@ -213,6 +466,13 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
      * @param message 错误详情
      * @return BusinessException
      */
+    private String safeItemKey(String itemKey) {
+        if (!StringUtils.hasText(itemKey)) {
+            throw zoteroFailed("Zotero item key is empty");
+        }
+        return itemKey.replaceAll("[^A-Za-z0-9]", "");
+    }
+
     private BusinessException zoteroFailed(String message) {
         return new BusinessException(ErrorCode.ZOTERO_WRITE_FAILED, message);
     }

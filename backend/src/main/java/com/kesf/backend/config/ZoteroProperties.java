@@ -16,4 +16,8 @@ public class ZoteroProperties {
     private String baseUrl = "http://127.0.0.1:23119";
 
     private Duration requestTimeout = Duration.ofSeconds(30);
+
+    private Duration metadataPollInterval = Duration.ofSeconds(1);
+
+    private int metadataMaxAttempts = 30;
 }

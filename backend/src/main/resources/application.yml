@@ -6,6 +6,10 @@ spring:
     username: root
     password: 123ksf123.
     driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   data:
     redis:
       host: localhost
@@ -23,7 +27,7 @@ mineru:
     batchResultsPath: /api/v4/extract-results/batch/{batchId}
   polling:
     interval: 5s
-    maxAttempts: 60
+    maxAttempts: 180
 zotero:
   enabled: true
   baseUrl: ${ZOTERO_BASE_URL:http://127.0.0.1:23119}
