@@ -66,7 +66,7 @@ scholarease:
 mineru:
   enabled: true
   baseUrl: https://mineru.net
-  token: ${MINERU_TOKEN:eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI4MDIwMDA0NCIsInJvbCI6IlJPTEVfUkVHSVNURVIiLCJpc3MiOiJPcGVuWExhYiIsImlhdCI6MTc3ODcyNjQxMywiY2xpZW50SWQiOiJsa3pkeDU3bnZ5MjJqa3BxOXgydyIsInBob25lIjoiMTgwOTUwMTM5MzgiLCJvcGVuSWQiOm51bGwsInV1aWQiOiIwYjA0NjY5ZC05ODYwLTQ0ZDUtOTlkNi0xNzBmMTljNDRkOGYiLCJlbWFpbCI6IiIsImV4cCI6MTc4NjUwMjQxM30.oauUQ-LUy9qrOHPA-OPzawUrjG8Pn5E8Jnd1L8fNiV9JQIY9ZHqFyBfGjfJ7jcwAyZtF-IZxWapy7WGIpeKuZA}
+  token: ${MINERU_TOKEN:}
   modelVersion: vlm
   sourceFile:
     mode: mineru-signed-upload
@@ -95,7 +95,7 @@ minio:
 embedding:
   api:
     url: ${EMBEDDING_API_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
-    key: ${EMBEDDING_API_KEY:sk-0935e8f5a78d40c7833113acbd7979b6}
+    key: ${EMBEDDING_API_KEY:}
     model: ${EMBEDDING_API_MODEL:text-embedding-v4}
     batch-size: ${EMBEDDING_API_BATCH_SIZE:10}
     dimension: ${EMBEDDING_API_DIMENSION:2048}

@@ -260,29 +260,25 @@ public class DocumentServiceImpl implements DocumentService {
 
             byte[] pdfBytes = readFileBytes(file);
 
-            // 1. 将原始 PDF 上传到 MinIO 对象存储
-            uploadOriginalPdf(pdfBytes, traceId, fileName);
-
-            // 2. 提交 MinerU 解析任务并轮询等待完成
-            MinerUParseResult parseResult = parseByMinerU(
-                    pdfBytes,
-                    traceId,
-                    fileName
-            );
-
-            // 3. 下载 MinerU 解析产物的完整 ZIP 包，解压后上传到 MinIO
-            //    ZIP 中包含 full.md（完整 Markdown）和 content_list_v2.json（结构化内容块列表）等文件
-            //    这些文件是后续向量化的数据源
-            // 4. 将 PDF 发送到 Zotero 桌面软件，利用其元数据识别能力提取标题、作者、DOI 等信息
-
-            // 5. 调用 Zotero 导入服务，利用其元数据识别能力从 PDF 提取标题、作者、DOI 等结构化信息
+            // 1. 先调用 Zotero 导入服务（放在 MinIO 写入之前，Zotero 不可用时快速失败，不留下孤儿数据）
             ZoteroImportService.ZoteroImportResult zoteroResult = zoteroImportService.importParsedPaper(
                     pdfBytes,
                     fileName,
                     traceId
             );
 
-            // 6. 将提取到的 Zotero 元数据与基础文件信息组装为实体类，并保存到数据库
+            // 2. 提交 MinerU 解析任务并轮询等待完成
+            //    ZIP 中包含 full.md（完整 Markdown）和 content_list_v2.json（结构化内容块列表）等文件
+            MinerUParseResult parseResult = parseByMinerU(
+                    pdfBytes,
+                    traceId,
+                    fileName
+            );
+
+            // 3. 将原始 PDF 上传到 MinIO 对象存储
+            uploadOriginalPdf(pdfBytes, traceId, fileName);
+
+            // 4. 组装实体类 → 发送 Kafka → 写入数据库（最后一步）
             PaperEntity paperEntity = toPaperEntity(
                     uploadDocument,
                     actualPaperMd5,
@@ -290,7 +286,6 @@ public class DocumentServiceImpl implements DocumentService {
                     fileName,
                     zoteroResult.metadata()
             );
-            // 6a. 在数据库写入前，先将向量化任务发送到 Kafka（异步解耦，失败不影响主流程）
             paperVectorIndexProducer.send(toPaperVectorIndexTask(
                     uploadDocument,
                     actualPaperMd5,
@@ -300,7 +295,7 @@ public class DocumentServiceImpl implements DocumentService {
             ));
             paperMapper.insert(paperEntity);
 
-            // 7. 写入文献位置信息（MinIO + Zotero）
+            // 5. 写入文献位置信息（MinIO + Zotero）
             PaperLocationsEntity locations = new PaperLocationsEntity();
             locations.setPaperId(paperEntity.getPaperId());
             locations.setPaperMd5(actualPaperMd5);

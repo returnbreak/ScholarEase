@@ -17346,3 +17346,1309 @@ Caused by: com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Java 8
 2026-05-17T20:11:44.837+08:00 DEBUG 25544 --- [http-nio-8080-exec-8] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
 2026-05-17T20:11:44.839+08:00 DEBUG 25544 --- [http-nio-8080-exec-8] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
 2026-05-17T20:11:44.844+08:00 DEBUG 25544 --- [http-nio-8080-exec-8] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T20:24:50.401+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Revoke previously assigned partitions paper-vector-index-topic-0
+2026-05-17T20:24:50.410+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.k.l.KafkaMessageListenerContainer    : paper-vector-index-group: partitions revoked: [paper-vector-index-topic-0]
+2026-05-17T20:24:50.412+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Member consumer-paper-vector-index-group-1-7c3ce374-301c-4bcd-bd8e-7c3258fd2d91 sending LeaveGroup request to coordinator localhost:9092 (id: 2147483646 rack: null) due to the consumer unsubscribed from all topics
+2026-05-17T20:24:50.415+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Resetting generation and member id due to: consumer pro-actively leaving the group
+2026-05-17T20:24:50.415+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Request joining group due to: consumer pro-actively leaving the group
+2026-05-17T20:24:50.415+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.i.ClassicKafkaConsumer         : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Unsubscribed all topics or patterns and assigned partitions
+2026-05-17T20:24:50.419+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Resetting generation and member id due to: consumer pro-actively leaving the group
+2026-05-17T20:24:50.420+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Request joining group due to: consumer pro-actively leaving the group
+2026-05-17T20:24:50.883+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T20:24:50.883+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T20:24:50.883+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter
+2026-05-17T20:24:50.883+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T20:24:50.890+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.kafka.common.utils.AppInfoParser     : App info kafka.consumer for consumer-paper-vector-index-group-1 unregistered
+2026-05-17T20:24:50.892+08:00  INFO 25544 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.k.l.KafkaMessageListenerContainer    : paper-vector-index-group: Consumer stopped
+2026-05-17T20:24:50.898+08:00  INFO 25544 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-17T20:24:50.910+08:00  INFO 25544 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-17T20:24:50.939+08:00  INFO 25544 --- [SpringApplicationShutdownHook] o.a.k.clients.producer.KafkaProducer     : [Producer clientId=producer-1] Closing the Kafka producer with timeoutMillis = 30000 ms.
+2026-05-17T20:24:50.942+08:00  INFO 25544 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T20:24:50.942+08:00  INFO 25544 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T20:24:50.942+08:00  INFO 25544 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter
+2026-05-17T20:24:50.942+08:00  INFO 25544 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T20:24:50.942+08:00  INFO 25544 --- [SpringApplicationShutdownHook] o.a.kafka.common.utils.AppInfoParser     : App info kafka.producer for producer-1 unregistered
+2026-05-17T20:24:50.989+08:00  INFO 25544 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-17T20:24:50.994+08:00  INFO 25544 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-17T20:39:36.650+08:00  INFO 32264 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 32264 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-17T20:39:36.652+08:00 DEBUG 32264 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-17T20:39:36.653+08:00  INFO 32264 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-17T20:39:37.261+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T20:39:37.263+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-17T20:39:37.285+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 15 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-17T20:39:37.290+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T20:39:37.290+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-17T20:39:37.295+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 3 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-17T20:39:37.306+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T20:39:37.307+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-17T20:39:37.319+08:00  INFO 32264 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-17T20:39:37.844+08:00  INFO 32264 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-17T20:39:37.858+08:00  INFO 32264 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-17T20:39:37.859+08:00  INFO 32264 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-17T20:39:37.906+08:00  INFO 32264 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-17T20:39:37.906+08:00  INFO 32264 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1213 ms
+2026-05-17T20:39:38.944+08:00  INFO 32264 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@61d9efe0
+2026-05-17T20:39:39.428+08:00  INFO 32264 --- [main] o.a.k.clients.admin.AdminClientConfig    : AdminClientConfig values: 
+	auto.include.jmx.reporter = true
+	bootstrap.controllers = []
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	client.id = 
+	connections.max.idle.ms = 300000
+	default.api.timeout.ms = 60000
+	enable.metrics.push = true
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+
+2026-05-17T20:39:39.546+08:00  INFO 32264 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T20:39:39.546+08:00  INFO 32264 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T20:39:39.546+08:00  INFO 32264 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779021579544
+2026-05-17T20:39:40.027+08:00  INFO 32264 --- [kafka-admin-client-thread | adminclient-1] o.a.kafka.common.utils.AppInfoParser     : App info kafka.admin.client for adminclient-1 unregistered
+2026-05-17T20:39:40.030+08:00  INFO 32264 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T20:39:40.030+08:00  INFO 32264 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T20:39:40.030+08:00  INFO 32264 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T20:39:40.041+08:00  INFO 32264 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-17T20:39:40.058+08:00  INFO 32264 --- [main] o.a.k.clients.consumer.ConsumerConfig    : ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-paper-vector-index-group-1
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1
+	group.id = paper-vector-index-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 500
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.JsonDeserializer
+
+2026-05-17T20:39:40.089+08:00  INFO 32264 --- [main] o.a.k.c.t.i.KafkaMetricsCollector        : initializing Kafka metrics collector
+2026-05-17T20:39:40.154+08:00  INFO 32264 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T20:39:40.154+08:00  INFO 32264 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T20:39:40.154+08:00  INFO 32264 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779021580154
+2026-05-17T20:39:40.155+08:00  INFO 32264 --- [main] o.a.k.c.c.i.ClassicKafkaConsumer         : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Subscribed to topic(s): paper-vector-index-topic
+2026-05-17T20:39:40.166+08:00  INFO 32264 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 4.133 seconds (process running for 5.134)
+2026-05-17T20:39:40.174+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] org.apache.kafka.clients.Metadata        : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Cluster ID: KSU_tMMgRAy7MT3JONrJSA
+2026-05-17T20:39:40.177+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-05-17T20:39:40.178+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] (Re-)joining group
+2026-05-17T20:39:40.194+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Request joining group due to: need to re-join with the given member-id: consumer-paper-vector-index-group-1-03036758-8ad1-4f74-a5e2-0c7b954959d5
+2026-05-17T20:39:40.195+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] (Re-)joining group
+2026-05-17T20:39:43.205+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Successfully joined group with generation Generation{generationId=28, memberId='consumer-paper-vector-index-group-1-03036758-8ad1-4f74-a5e2-0c7b954959d5', protocol='range'}
+2026-05-17T20:39:43.209+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Finished assignment for group at generation 28: {consumer-paper-vector-index-group-1-03036758-8ad1-4f74-a5e2-0c7b954959d5=Assignment(partitions=[paper-vector-index-topic-0])}
+2026-05-17T20:39:43.219+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Successfully synced group in generation Generation{generationId=28, memberId='consumer-paper-vector-index-group-1-03036758-8ad1-4f74-a5e2-0c7b954959d5', protocol='range'}
+2026-05-17T20:39:43.219+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Notifying assignor about the new Assignment(partitions=[paper-vector-index-topic-0])
+2026-05-17T20:39:43.221+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Adding newly assigned partitions: paper-vector-index-topic-0
+2026-05-17T20:39:43.227+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerUtils        : Setting offset for partition paper-vector-index-topic-0 to the committed offset FetchPosition{offset=11, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}
+2026-05-17T20:39:43.228+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.k.l.KafkaMessageListenerContainer    : paper-vector-index-group: partitions assigned: [paper-vector-index-topic-0]
+2026-05-17T20:40:14.391+08:00  INFO 32264 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-17T20:40:14.391+08:00  INFO 32264 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-17T20:40:14.393+08:00  INFO 32264 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-05-17T20:40:14.603+08:00  INFO 32264 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-17T20:40:14.932+08:00  INFO 32264 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@8478469
+2026-05-17T20:40:14.936+08:00  INFO 32264 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-17T20:40:14.943+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-17T20:40:14.977+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-17T20:40:15.068+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T20:40:28.838+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE (paper_md5 = ?) LIMIT 1
+2026-05-17T20:40:28.844+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T20:40:28.857+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T20:40:28.866+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.m.P.insert                         : ==>  Preparing: INSERT INTO paper_upload_parse_progress ( trace_id, paper_md5, filename, submission_time, parse_status ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-17T20:40:28.871+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.m.P.insert                         : ==> Parameters: 93106051e00a4b8eab5931991d2fe43f(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String), 01_2022_Nationwide native forest structure maps for Argentina based on forest inventory data, SAR Sentinel-1 and vegetation metr.pdf(String), 2026-05-17T20:40:28.512(LocalDateTime), 1(Integer)
+2026-05-17T20:40:28.901+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.m.P.insert                         : <==    Updates: 1
+2026-05-17T20:40:43.034+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.m.P.update                         : ==>  Preparing: UPDATE paper_upload_parse_progress SET parse_status=? WHERE (trace_id = ?)
+2026-05-17T20:40:43.037+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.m.P.update                         : ==> Parameters: 3(Integer), 93106051e00a4b8eab5931991d2fe43f(String)
+2026-05-17T20:40:43.049+08:00 DEBUG 32264 --- [http-nio-8080-exec-2] c.k.b.m.P.update                         : <==    Updates: 1
+2026-05-17T20:40:43.052+08:00  WARN 32264 --- [http-nio-8080-exec-2] c.k.b.exception.GlobalExceptionHandler   : Business exception handled: traceId=93106051e00a4b8eab5931991d2fe43f, code=ZOTERO_WRITE_FAILED, method=POST, uri=/api/documents/upload, message=Zotero import request failed: null, data=null
+2026-05-17T20:40:43.223+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE (paper_md5 = ?) LIMIT 1
+2026-05-17T20:40:43.226+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String)
+2026-05-17T20:40:43.228+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T20:40:43.230+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.m.P.insert                         : ==>  Preparing: INSERT INTO paper_upload_parse_progress ( trace_id, paper_md5, filename, submission_time, parse_status ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-17T20:40:43.232+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.m.P.insert                         : ==> Parameters: 8d83ce828db1448c8643116f73e8d08c(String), 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 02_2022_Spatially Continuous Mapping of Forest Canopy Height in Canada by Combining GEDI and ICESat-2 with PALSAR and Sentinel.pdf(String), 2026-05-17T20:40:43.065(LocalDateTime), 1(Integer)
+2026-05-17T20:40:43.303+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.m.P.insert                         : <==    Updates: 1
+2026-05-17T20:40:53.228+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.m.P.update                         : ==>  Preparing: UPDATE paper_upload_parse_progress SET parse_status=? WHERE (trace_id = ?)
+2026-05-17T20:40:53.230+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.m.P.update                         : ==> Parameters: 3(Integer), 8d83ce828db1448c8643116f73e8d08c(String)
+2026-05-17T20:40:53.235+08:00 DEBUG 32264 --- [http-nio-8080-exec-3] c.k.b.m.P.update                         : <==    Updates: 1
+2026-05-17T20:40:53.238+08:00  WARN 32264 --- [http-nio-8080-exec-3] c.k.b.exception.GlobalExceptionHandler   : Business exception handled: traceId=8d83ce828db1448c8643116f73e8d08c, code=ZOTERO_WRITE_FAILED, method=POST, uri=/api/documents/upload, message=Zotero import request failed: null, data=null
+2026-05-17T20:40:53.263+08:00 DEBUG 32264 --- [http-nio-8080-exec-4] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-17T20:40:53.265+08:00 DEBUG 32264 --- [http-nio-8080-exec-4] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-17T20:40:53.267+08:00 DEBUG 32264 --- [http-nio-8080-exec-4] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T20:41:04.648+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE (paper_md5 = ?) LIMIT 1
+2026-05-17T20:41:04.650+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T20:41:04.655+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T20:41:04.657+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.P.insert                         : ==>  Preparing: INSERT INTO paper_upload_parse_progress ( trace_id, paper_md5, filename, submission_time, parse_status ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-17T20:41:04.659+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.P.insert                         : ==> Parameters: a855886e7f204d229965edd08a9835ca(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String), 01_2022_Nationwide native forest structure maps for Argentina based on forest inventory data, SAR Sentinel-1 and vegetation metr.pdf(String), 2026-05-17T20:41:04.431(LocalDateTime), 1(Integer)
+2026-05-17T20:41:04.721+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.P.insert                         : <==    Updates: 1
+2026-05-17T20:41:20.987+08:00  INFO 32264 --- [http-nio-8080-exec-6] o.a.k.clients.producer.ProducerConfig    : ProducerConfig values: 
+	acks = -1
+	auto.include.jmx.reporter = true
+	batch.size = 16384
+	bootstrap.servers = [localhost:9092]
+	buffer.memory = 33554432
+	client.dns.lookup = use_all_dns_ips
+	client.id = producer-1
+	compression.gzip.level = -1
+	compression.lz4.level = 9
+	compression.type = none
+	compression.zstd.level = 3
+	connections.max.idle.ms = 540000
+	delivery.timeout.ms = 120000
+	enable.idempotence = true
+	enable.metrics.push = true
+	interceptor.classes = []
+	key.serializer = class org.apache.kafka.common.serialization.StringSerializer
+	linger.ms = 0
+	max.block.ms = 60000
+	max.in.flight.requests.per.connection = 5
+	max.request.size = 1048576
+	metadata.max.age.ms = 300000
+	metadata.max.idle.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partitioner.adaptive.partitioning.enable = true
+	partitioner.availability.timeout.ms = 0
+	partitioner.class = null
+	partitioner.ignore.keys = false
+	receive.buffer.bytes = 32768
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 3
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	transaction.timeout.ms = 60000
+	transactional.id = null
+	value.serializer = class org.springframework.kafka.support.serializer.JsonSerializer
+
+2026-05-17T20:41:20.989+08:00  INFO 32264 --- [http-nio-8080-exec-6] o.a.k.c.t.i.KafkaMetricsCollector        : initializing Kafka metrics collector
+2026-05-17T20:41:21.015+08:00  INFO 32264 --- [http-nio-8080-exec-6] o.a.k.clients.producer.KafkaProducer     : [Producer clientId=producer-1] Instantiated an idempotent producer.
+2026-05-17T20:41:21.034+08:00  INFO 32264 --- [http-nio-8080-exec-6] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T20:41:21.034+08:00  INFO 32264 --- [http-nio-8080-exec-6] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T20:41:21.034+08:00  INFO 32264 --- [http-nio-8080-exec-6] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779021681034
+2026-05-17T20:41:21.048+08:00  INFO 32264 --- [kafka-producer-network-thread | producer-1] org.apache.kafka.clients.Metadata        : [Producer clientId=producer-1] Cluster ID: KSU_tMMgRAy7MT3JONrJSA
+2026-05-17T20:41:21.066+08:00  INFO 32264 --- [kafka-producer-network-thread | producer-1] o.a.k.c.p.internals.TransactionManager   : [Producer clientId=producer-1] ProducerId set to 8 with epoch 0
+2026-05-17T20:41:21.097+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.backend.mapper.PaperMapper.insert    : ==>  Preparing: INSERT INTO papers ( paper_md5, file_name, file_size_bytes, title, authors_json, keywords_json, language, year, venue, doi, submission_time ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+2026-05-17T20:41:21.100+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.backend.mapper.PaperMapper.insert    : ==> Parameters: 0f2ea6a28188e0c985d8c0606b8ae8e7(String), 01_2022_Nationwide native forest structure maps for Argentina based on forest inventory data, SAR Sentinel-1 and vegetation metr.pdf(String), 2081611(Long), Nationwide native forest structure maps for Argentina based on forest inventory data, SAR Sentinel-1 and vegetation metrics from Sentinel-2 imagery(String), ["Eduarda M.O. Silveira","Volker C. Radeloff","Sebastián Martinuzzi","Guillermo J. Martinez Pastur","Julieta Bono","Natalia Politi","Leonidas Lizarraga","Luis O. Rivera","Lucia Ciuffoli","Yamina M. Rosas","Ashley M. Olah","Gregorio I. Gavier-Pizarro","Anna M. Pidgeon"](String), [](String), en(String), 2023(Integer), Remote Sensing of Environment(String), 10.1016/j.rse.2022.113391(String), 2026-05-17T12:41:04.431(LocalDateTime)
+2026-05-17T20:41:21.109+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.backend.mapper.PaperMapper.insert    : <==    Updates: 1
+2026-05-17T20:41:21.117+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.insert      : ==>  Preparing: INSERT INTO paper_locations ( paper_id, paper_md5, file_name, submission_time, minio_bucket, minio_original_key, minio_parsed_prefix, zotero_item_key, zotero_collection_name ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )
+2026-05-17T20:41:21.118+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.insert      : ==> Parameters: 25(Long), 0f2ea6a28188e0c985d8c0606b8ae8e7(String), 01_2022_Nationwide native forest structure maps for Argentina based on forest inventory data, SAR Sentinel-1 and vegetation metr.pdf(String), 2026-05-17T12:41:04.431(LocalDateTime), literatures(String), uploads/a855886e7f204d229965edd08a9835ca/original/01_2022_Nationwide native forest structure maps for Argentina based on forest inventory data, SAR Sentinel-1 and vegetation metr.pdf(String), uploads/a855886e7f204d229965edd08a9835ca/mineru/(String), UAUTCBPJ(String), ScholarEase(String)
+2026-05-17T20:41:21.126+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.PaperLocationsMapper.insert      : <==    Updates: 1
+2026-05-17T20:41:21.128+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.P.update                         : ==>  Preparing: UPDATE paper_upload_parse_progress SET parse_status=? WHERE (trace_id = ?)
+2026-05-17T20:41:21.129+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.P.update                         : ==> Parameters: 2(Integer), a855886e7f204d229965edd08a9835ca(String)
+2026-05-17T20:41:21.132+08:00 DEBUG 32264 --- [http-nio-8080-exec-6] c.k.b.m.P.update                         : <==    Updates: 1
+2026-05-17T20:41:21.195+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorIndexConsumer    : Received paper vector index task: taskId=a855886e7f204d229965edd08a9835ca:0f2ea6a28188e0c985d8c0606b8ae8e7, traceId=a855886e7f204d229965edd08a9835ca, paperMd5=0f2ea6a28188e0c985d8c0606b8ae8e7, contentListObjectKey=uploads/a855886e7f204d229965edd08a9835ca/mineru/content_list_v2.json
+2026-05-17T20:41:21.196+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorizationService   : Start paper vectorization: taskId=a855886e7f204d229965edd08a9835ca:0f2ea6a28188e0c985d8c0606b8ae8e7, traceId=a855886e7f204d229965edd08a9835ca, paperMd5=0f2ea6a28188e0c985d8c0606b8ae8e7, contentListObjectKey=uploads/a855886e7f204d229965edd08a9835ca/mineru/content_list_v2.json
+2026-05-17T20:41:21.234+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE (paper_md5 = ?) LIMIT 1
+2026-05-17T20:41:21.235+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String)
+2026-05-17T20:41:21.237+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T20:41:21.238+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.P.insert                         : ==>  Preparing: INSERT INTO paper_upload_parse_progress ( trace_id, paper_md5, filename, submission_time, parse_status ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-17T20:41:21.238+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.P.insert                         : ==> Parameters: 606a56e149e84e438ee1e98ef023341e(String), 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 02_2022_Spatially Continuous Mapping of Forest Canopy Height in Canada by Combining GEDI and ICESat-2 with PALSAR and Sentinel.pdf(String), 2026-05-17T20:41:21.146(LocalDateTime), 1(Integer)
+2026-05-17T20:41:21.240+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.P.insert                         : <==    Updates: 1
+2026-05-17T20:41:30.359+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.backend.mapper.PaperMapper.insert    : ==>  Preparing: INSERT INTO papers ( paper_md5, file_name, file_size_bytes, title, authors_json, keywords_json, language, year, venue, doi, submission_time ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+2026-05-17T20:41:30.361+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.backend.mapper.PaperMapper.insert    : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 02_2022_Spatially Continuous Mapping of Forest Canopy Height in Canada by Combining GEDI and ICESat-2 with PALSAR and Sentinel.pdf(String), 4280279(Long), Spatially Continuous Mapping of Forest Canopy Height in Canada by Combining GEDI and ICESat-2 with PALSAR and Sentinel(String), ["Camile Sothe","Alemu Gonsamo","Ricardo B. Lourenço","Werner A. Kurz","James Snider"](String), [](String), en(String), 2022(Integer), Remote Sensing(String), 10.3390/rs14205158(String), 2026-05-17T12:41:21.146(LocalDateTime)
+2026-05-17T20:41:30.374+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.backend.mapper.PaperMapper.insert    : <==    Updates: 1
+2026-05-17T20:41:30.377+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.insert      : ==>  Preparing: INSERT INTO paper_locations ( paper_id, paper_md5, file_name, submission_time, minio_bucket, minio_original_key, minio_parsed_prefix, zotero_item_key, zotero_collection_name ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )
+2026-05-17T20:41:30.378+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.insert      : ==> Parameters: 26(Long), 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 02_2022_Spatially Continuous Mapping of Forest Canopy Height in Canada by Combining GEDI and ICESat-2 with PALSAR and Sentinel.pdf(String), 2026-05-17T12:41:21.146(LocalDateTime), literatures(String), uploads/606a56e149e84e438ee1e98ef023341e/original/02_2022_Spatially Continuous Mapping of Forest Canopy Height in Canada by Combining GEDI and ICESat-2 with PALSAR and Sentinel.pdf(String), uploads/606a56e149e84e438ee1e98ef023341e/mineru/(String), SCALNKVX(String), ScholarEase(String)
+2026-05-17T20:41:30.381+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.PaperLocationsMapper.insert      : <==    Updates: 1
+2026-05-17T20:41:30.382+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.P.update                         : ==>  Preparing: UPDATE paper_upload_parse_progress SET parse_status=? WHERE (trace_id = ?)
+2026-05-17T20:41:30.383+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.P.update                         : ==> Parameters: 2(Integer), 606a56e149e84e438ee1e98ef023341e(String)
+2026-05-17T20:41:30.384+08:00 DEBUG 32264 --- [http-nio-8080-exec-7] c.k.b.m.P.update                         : <==    Updates: 1
+2026-05-17T20:41:30.429+08:00 DEBUG 32264 --- [http-nio-8080-exec-8] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-17T20:41:30.431+08:00 DEBUG 32264 --- [http-nio-8080-exec-8] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-17T20:41:30.441+08:00 DEBUG 32264 --- [http-nio-8080-exec-8] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 2
+2026-05-17T20:41:30.443+08:00 DEBUG 32264 --- [http-nio-8080-exec-8] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?,?))
+2026-05-17T20:41:30.444+08:00 DEBUG 32264 --- [http-nio-8080-exec-8] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T20:41:30.448+08:00 DEBUG 32264 --- [http-nio-8080-exec-8] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 2
+2026-05-17T20:41:35.944+08:00 DEBUG 32264 --- [http-nio-8080-exec-9] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-17T20:41:35.946+08:00 DEBUG 32264 --- [http-nio-8080-exec-9] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-17T20:41:35.949+08:00 DEBUG 32264 --- [http-nio-8080-exec-9] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 2
+2026-05-17T20:41:35.950+08:00 DEBUG 32264 --- [http-nio-8080-exec-9] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?,?))
+2026-05-17T20:41:35.953+08:00 DEBUG 32264 --- [http-nio-8080-exec-9] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T20:41:35.956+08:00 DEBUG 32264 --- [http-nio-8080-exec-9] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 2
+2026-05-17T20:41:38.107+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.i.ElasticsearchPaperIndexService : Elasticsearch bulk index succeeded: index=scholarease_base, documents=177
+2026-05-17T20:41:38.107+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorizationService   : Paper vectorization finished: taskId=a855886e7f204d229965edd08a9835ca:0f2ea6a28188e0c985d8c0606b8ae8e7, paperMd5=0f2ea6a28188e0c985d8c0606b8ae8e7, chunks=177
+2026-05-17T20:41:38.158+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorIndexConsumer    : Received paper vector index task: taskId=606a56e149e84e438ee1e98ef023341e:656b13e9ff8dbf9ee9968a5b52cb6a49, traceId=606a56e149e84e438ee1e98ef023341e, paperMd5=656b13e9ff8dbf9ee9968a5b52cb6a49, contentListObjectKey=uploads/606a56e149e84e438ee1e98ef023341e/mineru/content_list_v2.json
+2026-05-17T20:41:38.158+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorizationService   : Start paper vectorization: taskId=606a56e149e84e438ee1e98ef023341e:656b13e9ff8dbf9ee9968a5b52cb6a49, traceId=606a56e149e84e438ee1e98ef023341e, paperMd5=656b13e9ff8dbf9ee9968a5b52cb6a49, contentListObjectKey=uploads/606a56e149e84e438ee1e98ef023341e/mineru/content_list_v2.json
+2026-05-17T20:41:38.226+08:00 DEBUG 32264 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-17T20:41:38.227+08:00 DEBUG 32264 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 26(Long)
+2026-05-17T20:41:38.229+08:00 DEBUG 32264 --- [http-nio-8080-exec-5] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-17T20:41:42.188+08:00 DEBUG 32264 --- [http-nio-8080-exec-10] c.k.b.mapper.PaperMapper.selectById      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE id=?
+2026-05-17T20:41:42.189+08:00 DEBUG 32264 --- [http-nio-8080-exec-10] c.k.b.mapper.PaperMapper.selectById      : ==> Parameters: 25(Long)
+2026-05-17T20:41:42.191+08:00 DEBUG 32264 --- [http-nio-8080-exec-10] c.k.b.mapper.PaperMapper.selectById      : <==      Total: 1
+2026-05-17T20:41:46.771+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.i.ElasticsearchPaperIndexService : Elasticsearch bulk index succeeded: index=scholarease_base, documents=109
+2026-05-17T20:41:46.771+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorizationService   : Paper vectorization finished: taskId=606a56e149e84e438ee1e98ef023341e:656b13e9ff8dbf9ee9968a5b52cb6a49, paperMd5=656b13e9ff8dbf9ee9968a5b52cb6a49, chunks=109
+2026-05-17T21:13:07.668+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC
+2026-05-17T21:13:07.677+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 
+2026-05-17T21:13:07.691+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 2
+2026-05-17T21:13:07.693+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?,?))
+2026-05-17T21:13:07.694+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T21:13:07.705+08:00 DEBUG 32264 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 2
+2026-05-17T21:14:10.051+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Revoke previously assigned partitions paper-vector-index-topic-0
+2026-05-17T21:14:10.052+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.k.l.KafkaMessageListenerContainer    : paper-vector-index-group: partitions revoked: [paper-vector-index-topic-0]
+2026-05-17T21:14:10.052+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Member consumer-paper-vector-index-group-1-03036758-8ad1-4f74-a5e2-0c7b954959d5 sending LeaveGroup request to coordinator localhost:9092 (id: 2147483646 rack: null) due to the consumer unsubscribed from all topics
+2026-05-17T21:14:10.052+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Resetting generation and member id due to: consumer pro-actively leaving the group
+2026-05-17T21:14:10.052+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Request joining group due to: consumer pro-actively leaving the group
+2026-05-17T21:14:10.053+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.i.ClassicKafkaConsumer         : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Unsubscribed all topics or patterns and assigned partitions
+2026-05-17T21:14:10.055+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Resetting generation and member id due to: consumer pro-actively leaving the group
+2026-05-17T21:14:10.055+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Request joining group due to: consumer pro-actively leaving the group
+2026-05-17T21:14:10.124+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T21:14:10.124+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T21:14:10.124+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter
+2026-05-17T21:14:10.124+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T21:14:10.127+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.kafka.common.utils.AppInfoParser     : App info kafka.consumer for consumer-paper-vector-index-group-1 unregistered
+2026-05-17T21:14:10.128+08:00  INFO 32264 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.k.l.KafkaMessageListenerContainer    : paper-vector-index-group: Consumer stopped
+2026-05-17T21:14:10.130+08:00  INFO 32264 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-17T21:14:10.136+08:00  INFO 32264 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-05-17T21:14:10.146+08:00  INFO 32264 --- [SpringApplicationShutdownHook] o.a.k.clients.producer.KafkaProducer     : [Producer clientId=producer-1] Closing the Kafka producer with timeoutMillis = 30000 ms.
+2026-05-17T21:14:10.148+08:00  INFO 32264 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T21:14:10.148+08:00  INFO 32264 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T21:14:10.148+08:00  INFO 32264 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter
+2026-05-17T21:14:10.148+08:00  INFO 32264 --- [SpringApplicationShutdownHook] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T21:14:10.148+08:00  INFO 32264 --- [SpringApplicationShutdownHook] o.a.kafka.common.utils.AppInfoParser     : App info kafka.producer for producer-1 unregistered
+2026-05-17T21:14:10.175+08:00  INFO 32264 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-17T21:14:10.177+08:00  INFO 32264 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-05-17T21:27:54.738+08:00  INFO 15244 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 17 with PID 15244 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-17T21:27:54.740+08:00 DEBUG 15244 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-17T21:27:54.741+08:00  INFO 15244 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-17T21:27:55.164+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:27:55.166+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:27:55.186+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 14 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-17T21:27:55.190+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:27:55.191+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:27:55.195+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 3 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-17T21:27:55.204+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:27:55.205+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-17T21:27:55.216+08:00  INFO 15244 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-17T21:27:55.666+08:00  INFO 15244 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-17T21:27:55.677+08:00  INFO 15244 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-17T21:27:55.677+08:00  INFO 15244 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-17T21:27:55.733+08:00  INFO 15244 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-17T21:27:55.733+08:00  INFO 15244 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 965 ms
+2026-05-17T21:27:56.671+08:00  INFO 15244 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@2d36e77e
+2026-05-17T21:27:57.026+08:00  INFO 15244 --- [main] o.a.k.clients.admin.AdminClientConfig    : AdminClientConfig values: 
+	auto.include.jmx.reporter = true
+	bootstrap.controllers = []
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	client.id = 
+	connections.max.idle.ms = 300000
+	default.api.timeout.ms = 60000
+	enable.metrics.push = true
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+
+2026-05-17T21:27:57.106+08:00  INFO 15244 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T21:27:57.106+08:00  INFO 15244 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T21:27:57.106+08:00  INFO 15244 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779024477105
+2026-05-17T21:27:57.455+08:00  INFO 15244 --- [kafka-admin-client-thread | adminclient-1] o.a.kafka.common.utils.AppInfoParser     : App info kafka.admin.client for adminclient-1 unregistered
+2026-05-17T21:27:57.457+08:00  INFO 15244 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T21:27:57.457+08:00  INFO 15244 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T21:27:57.458+08:00  INFO 15244 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T21:27:57.467+08:00  INFO 15244 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-17T21:27:57.481+08:00  INFO 15244 --- [main] o.a.k.clients.consumer.ConsumerConfig    : ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-paper-vector-index-group-1
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1
+	group.id = paper-vector-index-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 500
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.JsonDeserializer
+
+2026-05-17T21:27:57.506+08:00  INFO 15244 --- [main] o.a.k.c.t.i.KafkaMetricsCollector        : initializing Kafka metrics collector
+2026-05-17T21:27:57.564+08:00  INFO 15244 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T21:27:57.564+08:00  INFO 15244 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T21:27:57.564+08:00  INFO 15244 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779024477564
+2026-05-17T21:27:57.565+08:00  INFO 15244 --- [main] o.a.k.c.c.i.ClassicKafkaConsumer         : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Subscribed to topic(s): paper-vector-index-topic
+2026-05-17T21:27:57.575+08:00  INFO 15244 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 3.155 seconds (process running for 3.405)
+2026-05-17T21:27:57.579+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] org.apache.kafka.clients.Metadata        : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Cluster ID: KSU_tMMgRAy7MT3JONrJSA
+2026-05-17T21:27:57.580+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-05-17T21:27:57.581+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] (Re-)joining group
+2026-05-17T21:27:57.591+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Request joining group due to: need to re-join with the given member-id: consumer-paper-vector-index-group-1-945c7859-ee4a-4bc8-b26d-64f689520cfd
+2026-05-17T21:27:57.592+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] (Re-)joining group
+2026-05-17T21:28:00.605+08:00  INFO 15244 --- [http-nio-8080-exec-3] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-17T21:28:00.605+08:00  INFO 15244 --- [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-17T21:28:00.606+08:00  INFO 15244 --- [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-05-17T21:28:00.615+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Successfully joined group with generation Generation{generationId=30, memberId='consumer-paper-vector-index-group-1-945c7859-ee4a-4bc8-b26d-64f689520cfd', protocol='range'}
+2026-05-17T21:28:00.619+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Finished assignment for group at generation 30: {consumer-paper-vector-index-group-1-945c7859-ee4a-4bc8-b26d-64f689520cfd=Assignment(partitions=[paper-vector-index-topic-0])}
+2026-05-17T21:28:00.633+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Successfully synced group in generation Generation{generationId=30, memberId='consumer-paper-vector-index-group-1-945c7859-ee4a-4bc8-b26d-64f689520cfd', protocol='range'}
+2026-05-17T21:28:00.634+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Notifying assignor about the new Assignment(partitions=[paper-vector-index-topic-0])
+2026-05-17T21:28:00.635+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Adding newly assigned partitions: paper-vector-index-topic-0
+2026-05-17T21:28:00.643+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerUtils        : Setting offset for partition paper-vector-index-topic-0 to the committed offset FetchPosition{offset=13, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}
+2026-05-17T21:28:00.645+08:00  INFO 15244 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.k.l.KafkaMessageListenerContainer    : paper-vector-index-group: partitions assigned: [paper-vector-index-topic-0]
+2026-05-17T21:28:00.746+08:00  INFO 15244 --- [http-nio-8080-exec-3] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-17T21:28:00.853+08:00  INFO 15244 --- [http-nio-8080-exec-3] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@6ec501cd
+2026-05-17T21:28:00.854+08:00  INFO 15244 --- [http-nio-8080-exec-3] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-17T21:28:00.859+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.m.PaperMapper.selectList_mpCount   : ==>  Preparing: SELECT COUNT(*) AS total FROM papers
+2026-05-17T21:28:00.876+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.m.PaperMapper.selectList_mpCount   : ==> Parameters: 
+2026-05-17T21:28:00.899+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.m.PaperMapper.selectList_mpCount   : <==      Total: 1
+2026-05-17T21:28:00.901+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC LIMIT ?
+2026-05-17T21:28:00.902+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 5(Long)
+2026-05-17T21:28:00.906+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 2
+2026-05-17T21:28:00.910+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?,?))
+2026-05-17T21:28:00.911+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T21:28:00.913+08:00 DEBUG 15244 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 2
+2026-05-17T21:28:15.408+08:00  INFO 32412 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 32412 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-17T21:28:15.409+08:00 DEBUG 32412 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-17T21:28:15.410+08:00  INFO 32412 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-17T21:28:15.908+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:28:15.909+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:28:15.923+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 10 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-17T21:28:15.926+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:28:15.926+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:28:15.929+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-17T21:28:15.936+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:28:15.938+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-17T21:28:15.946+08:00  INFO 32412 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-17T21:28:16.390+08:00  INFO 32412 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-17T21:28:16.402+08:00  INFO 32412 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-17T21:28:16.402+08:00  INFO 32412 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-17T21:28:16.451+08:00  INFO 32412 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-17T21:28:16.452+08:00  INFO 32412 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1010 ms
+2026-05-17T21:28:17.192+08:00  INFO 32412 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@a50b09c
+2026-05-17T21:28:17.562+08:00  INFO 32412 --- [main] o.a.k.clients.admin.AdminClientConfig    : AdminClientConfig values: 
+	auto.include.jmx.reporter = true
+	bootstrap.controllers = []
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	client.id = 
+	connections.max.idle.ms = 300000
+	default.api.timeout.ms = 60000
+	enable.metrics.push = true
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+
+2026-05-17T21:28:17.670+08:00  INFO 32412 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T21:28:17.670+08:00  INFO 32412 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T21:28:17.670+08:00  INFO 32412 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779024497669
+2026-05-17T21:28:18.031+08:00  INFO 32412 --- [kafka-admin-client-thread | adminclient-1] o.a.kafka.common.utils.AppInfoParser     : App info kafka.admin.client for adminclient-1 unregistered
+2026-05-17T21:28:18.034+08:00  INFO 32412 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T21:28:18.034+08:00  INFO 32412 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T21:28:18.035+08:00  INFO 32412 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T21:28:18.043+08:00  WARN 32412 --- [main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-05-17T21:28:18.062+08:00  INFO 32412 --- [main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-17T21:28:18.073+08:00 ERROR 32412 --- [main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+2026-05-17T21:29:21.747+08:00  INFO 31216 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 31216 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-17T21:29:21.748+08:00 DEBUG 31216 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-17T21:29:21.749+08:00  INFO 31216 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-17T21:29:22.160+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:29:22.161+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:29:22.174+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-17T21:29:22.178+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:29:22.178+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:29:22.181+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-17T21:29:22.187+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:29:22.188+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-17T21:29:22.194+08:00  INFO 31216 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-17T21:29:22.550+08:00  INFO 31216 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-17T21:29:22.560+08:00  INFO 31216 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-17T21:29:22.561+08:00  INFO 31216 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-17T21:29:22.612+08:00  INFO 31216 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-17T21:29:22.612+08:00  INFO 31216 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 835 ms
+2026-05-17T21:29:23.233+08:00  INFO 31216 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@61d9efe0
+2026-05-17T21:29:23.531+08:00  INFO 31216 --- [main] o.a.k.clients.admin.AdminClientConfig    : AdminClientConfig values: 
+	auto.include.jmx.reporter = true
+	bootstrap.controllers = []
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	client.id = 
+	connections.max.idle.ms = 300000
+	default.api.timeout.ms = 60000
+	enable.metrics.push = true
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+
+2026-05-17T21:29:23.609+08:00  INFO 31216 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T21:29:23.610+08:00  INFO 31216 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T21:29:23.610+08:00  INFO 31216 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779024563609
+2026-05-17T21:29:23.836+08:00  INFO 31216 --- [kafka-admin-client-thread | adminclient-1] o.a.kafka.common.utils.AppInfoParser     : App info kafka.admin.client for adminclient-1 unregistered
+2026-05-17T21:29:23.842+08:00  INFO 31216 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T21:29:23.843+08:00  INFO 31216 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T21:29:23.843+08:00  INFO 31216 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T21:29:23.851+08:00  WARN 31216 --- [main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-05-17T21:29:23.867+08:00  INFO 31216 --- [main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-17T21:29:23.879+08:00 ERROR 31216 --- [main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+2026-05-17T21:44:19.145+08:00  INFO 26260 --- [main] com.kesf.backend.BackendApplication      : Starting BackendApplication using Java 21.0.8 with PID 26260 (E:\Javacode\ScholarEase\backend\target\classes started by kesf in E:\Javacode\ScholarEase\backend)
+2026-05-17T21:44:19.146+08:00 DEBUG 26260 --- [main] com.kesf.backend.BackendApplication      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-05-17T21:44:19.147+08:00  INFO 26260 --- [main] com.kesf.backend.BackendApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-05-17T21:44:19.647+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:44:19.648+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:44:19.663+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 10 ms. Found 0 Elasticsearch repository interfaces.
+2026-05-17T21:44:19.667+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:44:19.667+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-05-17T21:44:19.670+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-05-17T21:44:19.678+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-17T21:44:19.679+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-17T21:44:19.688+08:00  INFO 26260 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-17T21:44:20.145+08:00  INFO 26260 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-17T21:44:20.156+08:00  INFO 26260 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-17T21:44:20.156+08:00  INFO 26260 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-05-17T21:44:20.204+08:00  INFO 26260 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-17T21:44:20.205+08:00  INFO 26260 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1026 ms
+2026-05-17T21:44:21.014+08:00  INFO 26260 --- [main] m.e.s.MybatisPlusApplicationContextAware : Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@a50b09c
+2026-05-17T21:44:21.396+08:00  INFO 26260 --- [main] o.a.k.clients.admin.AdminClientConfig    : AdminClientConfig values: 
+	auto.include.jmx.reporter = true
+	bootstrap.controllers = []
+	bootstrap.servers = [localhost:9092]
+	client.dns.lookup = use_all_dns_ips
+	client.id = 
+	connections.max.idle.ms = 300000
+	default.api.timeout.ms = 60000
+	enable.metrics.push = true
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+
+2026-05-17T21:44:21.501+08:00  INFO 26260 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T21:44:21.501+08:00  INFO 26260 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T21:44:21.502+08:00  INFO 26260 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779025461500
+2026-05-17T21:44:21.848+08:00  INFO 26260 --- [kafka-admin-client-thread | adminclient-1] o.a.kafka.common.utils.AppInfoParser     : App info kafka.admin.client for adminclient-1 unregistered
+2026-05-17T21:44:21.850+08:00  INFO 26260 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-05-17T21:44:21.851+08:00  INFO 26260 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-05-17T21:44:21.851+08:00  INFO 26260 --- [kafka-admin-client-thread | adminclient-1] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-05-17T21:44:21.864+08:00  INFO 26260 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-17T21:44:21.881+08:00  INFO 26260 --- [main] o.a.k.clients.consumer.ConsumerConfig    : ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-paper-vector-index-group-1
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1
+	group.id = paper-vector-index-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 500
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.JsonDeserializer
+
+2026-05-17T21:44:21.910+08:00  INFO 26260 --- [main] o.a.k.c.t.i.KafkaMetricsCollector        : initializing Kafka metrics collector
+2026-05-17T21:44:21.973+08:00  INFO 26260 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T21:44:21.973+08:00  INFO 26260 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T21:44:21.973+08:00  INFO 26260 --- [main] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779025461973
+2026-05-17T21:44:21.974+08:00  INFO 26260 --- [main] o.a.k.c.c.i.ClassicKafkaConsumer         : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Subscribed to topic(s): paper-vector-index-topic
+2026-05-17T21:44:21.986+08:00  INFO 26260 --- [main] com.kesf.backend.BackendApplication      : Started BackendApplication in 3.275 seconds (process running for 3.713)
+2026-05-17T21:44:21.991+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] org.apache.kafka.clients.Metadata        : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Cluster ID: KSU_tMMgRAy7MT3JONrJSA
+2026-05-17T21:44:21.991+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-05-17T21:44:21.993+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] (Re-)joining group
+2026-05-17T21:44:22.005+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Request joining group due to: need to re-join with the given member-id: consumer-paper-vector-index-group-1-46ba40a2-24d5-412f-b969-16b0ed5e621b
+2026-05-17T21:44:22.005+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] (Re-)joining group
+2026-05-17T21:44:25.027+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Successfully joined group with generation Generation{generationId=32, memberId='consumer-paper-vector-index-group-1-46ba40a2-24d5-412f-b969-16b0ed5e621b', protocol='range'}
+2026-05-17T21:44:25.037+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Finished assignment for group at generation 32: {consumer-paper-vector-index-group-1-46ba40a2-24d5-412f-b969-16b0ed5e621b=Assignment(partitions=[paper-vector-index-topic-0])}
+2026-05-17T21:44:25.047+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Successfully synced group in generation Generation{generationId=32, memberId='consumer-paper-vector-index-group-1-46ba40a2-24d5-412f-b969-16b0ed5e621b', protocol='range'}
+2026-05-17T21:44:25.047+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Notifying assignor about the new Assignment(partitions=[paper-vector-index-topic-0])
+2026-05-17T21:44:25.050+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-paper-vector-index-group-1, groupId=paper-vector-index-group] Adding newly assigned partitions: paper-vector-index-topic-0
+2026-05-17T21:44:25.063+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.a.k.c.c.internals.ConsumerUtils        : Setting offset for partition paper-vector-index-topic-0 to the committed offset FetchPosition{offset=13, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}
+2026-05-17T21:44:25.067+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.k.l.KafkaMessageListenerContainer    : paper-vector-index-group: partitions assigned: [paper-vector-index-topic-0]
+2026-05-17T21:44:30.407+08:00  INFO 26260 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-17T21:44:30.408+08:00  INFO 26260 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-17T21:44:30.409+08:00  INFO 26260 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-05-17T21:44:30.767+08:00  INFO 26260 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-17T21:44:31.061+08:00  INFO 26260 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@69ee205a
+2026-05-17T21:44:31.065+08:00  INFO 26260 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-17T21:44:31.077+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.m.PaperMapper.selectList_mpCount   : ==>  Preparing: SELECT COUNT(*) AS total FROM papers
+2026-05-17T21:44:31.117+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.m.PaperMapper.selectList_mpCount   : ==> Parameters: 
+2026-05-17T21:44:31.147+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.m.PaperMapper.selectList_mpCount   : <==      Total: 1
+2026-05-17T21:44:31.154+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC LIMIT ?
+2026-05-17T21:44:31.157+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 10(Long)
+2026-05-17T21:44:31.166+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 2
+2026-05-17T21:44:31.174+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?,?))
+2026-05-17T21:44:31.177+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T21:44:31.181+08:00 DEBUG 26260 --- [http-nio-8080-exec-1] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 2
+2026-05-17T21:44:39.129+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers WHERE (paper_md5 = ?) LIMIT 1
+2026-05-17T21:44:39.130+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 0f68d3b1a70a595b85e315b201b1a9a0(String)
+2026-05-17T21:44:39.133+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 0
+2026-05-17T21:44:39.135+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.P.insert                         : ==>  Preparing: INSERT INTO paper_upload_parse_progress ( trace_id, paper_md5, filename, submission_time, parse_status ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-17T21:44:39.135+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.P.insert                         : ==> Parameters: 40ba029643b3418e8ffa17c045661fca(String), 0f68d3b1a70a595b85e315b201b1a9a0(String), 14_2023_TomoSense_A unique 3D dataset over temperate forest combining multi-frequency mono- and bi-static tomographic SAR.pdf(String), 2026-05-17T21:44:38.892(LocalDateTime), 1(Integer)
+2026-05-17T21:44:39.158+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.P.insert                         : <==    Updates: 1
+2026-05-17T21:45:33.972+08:00  INFO 26260 --- [http-nio-8080-exec-2] o.a.k.clients.producer.ProducerConfig    : ProducerConfig values: 
+	acks = -1
+	auto.include.jmx.reporter = true
+	batch.size = 16384
+	bootstrap.servers = [localhost:9092]
+	buffer.memory = 33554432
+	client.dns.lookup = use_all_dns_ips
+	client.id = producer-1
+	compression.gzip.level = -1
+	compression.lz4.level = 9
+	compression.type = none
+	compression.zstd.level = 3
+	connections.max.idle.ms = 540000
+	delivery.timeout.ms = 120000
+	enable.idempotence = true
+	enable.metrics.push = true
+	interceptor.classes = []
+	key.serializer = class org.apache.kafka.common.serialization.StringSerializer
+	linger.ms = 0
+	max.block.ms = 60000
+	max.in.flight.requests.per.connection = 5
+	max.request.size = 1048576
+	metadata.max.age.ms = 300000
+	metadata.max.idle.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partitioner.adaptive.partitioning.enable = true
+	partitioner.availability.timeout.ms = 0
+	partitioner.class = null
+	partitioner.ignore.keys = false
+	receive.buffer.bytes = 32768
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 3
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	transaction.timeout.ms = 60000
+	transactional.id = null
+	value.serializer = class org.springframework.kafka.support.serializer.JsonSerializer
+
+2026-05-17T21:45:33.975+08:00  INFO 26260 --- [http-nio-8080-exec-2] o.a.k.c.t.i.KafkaMetricsCollector        : initializing Kafka metrics collector
+2026-05-17T21:45:33.989+08:00  INFO 26260 --- [http-nio-8080-exec-2] o.a.k.clients.producer.KafkaProducer     : [Producer clientId=producer-1] Instantiated an idempotent producer.
+2026-05-17T21:45:34.014+08:00  INFO 26260 --- [http-nio-8080-exec-2] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-05-17T21:45:34.015+08:00  INFO 26260 --- [http-nio-8080-exec-2] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-05-17T21:45:34.015+08:00  INFO 26260 --- [http-nio-8080-exec-2] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1779025534014
+2026-05-17T21:45:34.023+08:00  INFO 26260 --- [kafka-producer-network-thread | producer-1] org.apache.kafka.clients.Metadata        : [Producer clientId=producer-1] Cluster ID: KSU_tMMgRAy7MT3JONrJSA
+2026-05-17T21:45:34.033+08:00  INFO 26260 --- [kafka-producer-network-thread | producer-1] o.a.k.c.p.internals.TransactionManager   : [Producer clientId=producer-1] ProducerId set to 9 with epoch 0
+2026-05-17T21:45:34.061+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.backend.mapper.PaperMapper.insert    : ==>  Preparing: INSERT INTO papers ( paper_md5, file_name, file_size_bytes, title, authors_json, keywords_json, language, year, venue, doi, submission_time ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+2026-05-17T21:45:34.065+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.backend.mapper.PaperMapper.insert    : ==> Parameters: 0f68d3b1a70a595b85e315b201b1a9a0(String), 14_2023_TomoSense_A unique 3D dataset over temperate forest combining multi-frequency mono- and bi-static tomographic SAR.pdf(String), 4158315(Long), TomoSense: A unique 3D dataset over temperate forest combining multi-frequency mono- and bi-static tomographic SAR with terrestrial, UAV and airborne lidar, and in-situ forest census(String), ["Stefano Tebaldini","Mauro Mariotti d'Alessandro","Lars M.H. Ulander","Patrik Bennet","Anders Gustavsson","Alex Coccia","Karlus Macedo","Mathias Disney","Phil Wilkes","Hans-Joachim Spors","Nico Schumacher","Jan Hanuš","Jan Novotný","Benjamin Brede","Harm Bartholomeus","Alvaro Lau","Jens Van Der Zee","Martin Herold","Dirk Schuettemeyer","Klaus Scipal"](String), [](String), en(String), 2023(Integer), Remote Sensing of Environment(String), 10.1016/j.rse.2023.113532(String), 2026-05-17T13:44:38.892(LocalDateTime)
+2026-05-17T21:45:34.073+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.backend.mapper.PaperMapper.insert    : <==    Updates: 1
+2026-05-17T21:45:34.080+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.PaperLocationsMapper.insert      : ==>  Preparing: INSERT INTO paper_locations ( paper_id, paper_md5, file_name, submission_time, minio_bucket, minio_original_key, minio_parsed_prefix, zotero_item_key, zotero_collection_name ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )
+2026-05-17T21:45:34.080+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.PaperLocationsMapper.insert      : ==> Parameters: 27(Long), 0f68d3b1a70a595b85e315b201b1a9a0(String), 14_2023_TomoSense_A unique 3D dataset over temperate forest combining multi-frequency mono- and bi-static tomographic SAR.pdf(String), 2026-05-17T13:44:38.892(LocalDateTime), literatures(String), uploads/40ba029643b3418e8ffa17c045661fca/original/14_2023_TomoSense_A unique 3D dataset over temperate forest combining multi-frequency mono- and bi-static tomographic SAR.pdf(String), uploads/40ba029643b3418e8ffa17c045661fca/mineru/(String), 2RE49V23(String), ScholarEase(String)
+2026-05-17T21:45:34.084+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.PaperLocationsMapper.insert      : <==    Updates: 1
+2026-05-17T21:45:34.096+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.P.update                         : ==>  Preparing: UPDATE paper_upload_parse_progress SET parse_status=? WHERE (trace_id = ?)
+2026-05-17T21:45:34.099+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.P.update                         : ==> Parameters: 2(Integer), 40ba029643b3418e8ffa17c045661fca(String)
+2026-05-17T21:45:34.104+08:00 DEBUG 26260 --- [http-nio-8080-exec-2] c.k.b.m.P.update                         : <==    Updates: 1
+2026-05-17T21:45:34.135+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorIndexConsumer    : Received paper vector index task: taskId=40ba029643b3418e8ffa17c045661fca:0f68d3b1a70a595b85e315b201b1a9a0, traceId=40ba029643b3418e8ffa17c045661fca, paperMd5=0f68d3b1a70a595b85e315b201b1a9a0, contentListObjectKey=uploads/40ba029643b3418e8ffa17c045661fca/mineru/content_list_v2.json
+2026-05-17T21:45:34.135+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorizationService   : Start paper vectorization: taskId=40ba029643b3418e8ffa17c045661fca:0f68d3b1a70a595b85e315b201b1a9a0, traceId=40ba029643b3418e8ffa17c045661fca, paperMd5=0f68d3b1a70a595b85e315b201b1a9a0, contentListObjectKey=uploads/40ba029643b3418e8ffa17c045661fca/mineru/content_list_v2.json
+2026-05-17T21:45:34.209+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.m.PaperMapper.selectList_mpCount   : ==>  Preparing: SELECT COUNT(*) AS total FROM papers
+2026-05-17T21:45:34.209+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.m.PaperMapper.selectList_mpCount   : ==> Parameters: 
+2026-05-17T21:45:34.210+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.m.PaperMapper.selectList_mpCount   : <==      Total: 1
+2026-05-17T21:45:34.212+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==>  Preparing: SELECT id AS paperId,paper_md5,file_name,file_size_bytes,title,authors_json,keywords_json,language,year,venue,doi,submission_time AS uploadTime FROM papers ORDER BY submission_time DESC,id DESC LIMIT ?
+2026-05-17T21:45:34.212+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : ==> Parameters: 10(Long)
+2026-05-17T21:45:34.214+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.mapper.PaperMapper.selectList      : <==      Total: 3
+2026-05-17T21:45:34.216+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : ==>  Preparing: SELECT id,paper_id,paper_md5,file_name,submission_time,minio_bucket,minio_original_key,minio_parsed_prefix,zotero_item_key,zotero_collection_name,created_at,updated_at FROM paper_locations WHERE (paper_md5 IN (?,?,?))
+2026-05-17T21:45:34.216+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : ==> Parameters: 656b13e9ff8dbf9ee9968a5b52cb6a49(String), 0f68d3b1a70a595b85e315b201b1a9a0(String), 0f2ea6a28188e0c985d8c0606b8ae8e7(String)
+2026-05-17T21:45:34.217+08:00 DEBUG 26260 --- [http-nio-8080-exec-3] c.k.b.m.PaperLocationsMapper.selectList  : <==      Total: 3
+2026-05-17T21:45:43.339+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.i.ElasticsearchPaperIndexService : Elasticsearch bulk index succeeded: index=scholarease_base, documents=94
+2026-05-17T21:45:43.340+08:00  INFO 26260 --- [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] c.k.b.s.impl.PaperVectorizationService   : Paper vectorization finished: taskId=40ba029643b3418e8ffa17c045661fca:0f68d3b1a70a595b85e315b201b1a9a0, paperMd5=0f68d3b1a70a595b85e315b201b1a9a0, chunks=94
