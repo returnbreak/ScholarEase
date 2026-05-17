@@ -6,6 +6,7 @@ import com.kesf.backend.exception.ErrorCode;
 import com.kesf.backend.service.ObjectStorageService;
 import io.minio.BucketExistsArgs;
 import io.minio.ListObjectsArgs;
+import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -43,6 +45,19 @@ public class MinioObjectStorageServiceImpl implements ObjectStorageService {
         } catch (Exception exception) {
             throw new BusinessException(ErrorCode.UPLOAD_FAILED,
                     "MinIO upload failed: " + exception.getMessage());
+        }
+    }
+
+    @Override
+    public byte[] getObjectBytes(String objectKey) {
+        try (InputStream inputStream = client().getObject(GetObjectArgs.builder()
+                .bucket(properties.getBucketName())
+                .object(objectKey)
+                .build())) {
+            return inputStream.readAllBytes();
+        } catch (Exception exception) {
+            throw new BusinessException(ErrorCode.UPLOAD_FAILED,
+                    "MinIO read object failed: " + exception.getMessage());
         }
     }
 

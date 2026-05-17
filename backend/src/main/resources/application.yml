@@ -1,20 +1,68 @@
 server:
   port: 8080
+
 spring:
+  ssl:
+    bundle:
+      pem:
+        elasticsearch:
+          truststore:
+            certificate: ${ELASTICSEARCH_CA_CERT:file:D:/elasticsearch-8.10.0/config/certs/http_ca.crt}
+
   datasource:
     url: jdbc:mysql://localhost:3306/scholarease?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: 123ksf123.
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+
   data:
     redis:
       host: localhost
       port: 6379
       password: 123456
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:https://localhost:9200}
+    username: ${ELASTICSEARCH_USERNAME:elastic}
+    password: ${ELASTICSEARCH_PASSWORD:sz6ubmhMscjkqefxgOCz}
+    restclient:
+      ssl:
+        bundle: ${ELASTICSEARCH_SSL_BUNDLE:elasticsearch}
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: paper-vector-index-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.kesf.backend.kafka
+        spring.json.value.default.type: com.kesf.backend.kafka.PaperVectorIndexTask
+    listener:
+      ack-mode: record
+
+scholarease:
+  kafka:
+    consumerGroup: paper-vector-index-group
+    paperVectorIndexPartitions: 1
+    paperVectorIndexReplicas: 1
+    topics:
+      paperVectorIndex: paper-vector-index-topic
+
 mineru:
   enabled: true
   baseUrl: https://mineru.net
@@ -28,10 +76,12 @@ mineru:
   polling:
     interval: 5s
     maxAttempts: 180
+
 zotero:
   enabled: true
   baseUrl: ${ZOTERO_BASE_URL:http://127.0.0.1:23119}
   requestTimeout: 30s
+
 minio:
   endpoint: http://localhost:9000
   accessKey: minioadmin
@@ -41,6 +91,19 @@ minio:
   storage:
     originalPrefix: uploads/{traceId}/original/
     parsedPrefix: uploads/{traceId}/mineru/
+
+embedding:
+  api:
+    url: ${EMBEDDING_API_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    key: ${EMBEDDING_API_KEY:sk-0935e8f5a78d40c7833113acbd7979b6}
+    model: ${EMBEDDING_API_MODEL:text-embedding-v4}
+    batch-size: ${EMBEDDING_API_BATCH_SIZE:10}
+    dimension: ${EMBEDDING_API_DIMENSION:2048}
+    timeout-seconds: ${EMBEDDING_API_TIMEOUT_SECONDS:30}
+
+elasticsearch:
+  index-name: ${ELASTICSEARCH_INDEX_NAME:scholarease_base}
+
 logging:
   file:
     name: ${LOG_FILE:../logs/scholarease-backend.log}

@@ -16,11 +16,14 @@ import com.kesf.backend.entity.PaperEntity;
 import com.kesf.backend.entity.PaperLocationsEntity;
 import com.kesf.backend.exception.BusinessException;
 import com.kesf.backend.exception.ErrorCode;
+import com.kesf.backend.kafka.PaperVectorIndexTask;
 import com.kesf.backend.mapper.PaperLocationsMapper;
 import com.kesf.backend.mapper.PaperMapper;
 import com.kesf.backend.service.DocumentService;
 import com.kesf.backend.service.ObjectStorageService;
 import com.kesf.backend.service.PaperUploadParseProgressService;
+import com.kesf.backend.service.PaperVectorSearchIndexService;
+import com.kesf.backend.service.PaperVectorIndexProducer;
 import com.kesf.backend.service.ZoteroImportService;
 import com.kesf.backend.utils.Md5Utils;
 import com.kesf.backend.utils.MinerUClient;
@@ -60,6 +63,8 @@ public class DocumentServiceImpl implements DocumentService {
     private static final String MINERU_STATE_RUNNING = "running";
     private static final String MINERU_STATE_DONE = "done";
     private static final String MINERU_STATE_FAILED = "failed";
+    /** 默认的文本向量化模型版本，写入 Kafka 任务供消费者端调用 Embedding API 时使用 */
+    private static final String DEFAULT_EMBEDDING_MODEL_VERSION = "text-embedding-v4";
 
     private final PaperMapper paperMapper;
     private final PaperLocationsMapper paperLocationsMapper;
@@ -69,6 +74,10 @@ public class DocumentServiceImpl implements DocumentService {
     private final ZoteroImportService zoteroImportService;
     private final ObjectStorageService objectStorageService;
     private final MinioProperties minioProperties;
+    /** 论文向量索引任务生产者，在论文入库前将向量化任务发送到 Kafka，实现异步解耦 */
+    private final PaperVectorIndexProducer paperVectorIndexProducer;
+    /** 论文向量搜索索引服务，用于删除论文时直接清理 Elasticsearch 中的向量文档 */
+    private final PaperVectorSearchIndexService paperVectorSearchIndexService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -100,9 +109,9 @@ public class DocumentServiceImpl implements DocumentService {
     /**
      * 分页查询文献列表，支持根据关键字、年份、发表来源等多条件进行动态过滤。
      *
-     * @param keyword  搜索关键字 (模糊匹配标题、文件名、作者或 DOI)
-     * @param year     发表年份 (精确匹配)
-     * @param venue    发表来源如期刊/会议名 (模糊匹配)
+     * @param keyword  搜索关键字（模糊匹配标题、文件名、作者或 DOI）
+     * @param year     发表年份（精确匹配）
+     * @param venue    发表来源如期刊/会议名（模糊匹配）
      * @param page     当前页码
      * @param pageSize 每页条数
      * @return 包含文献概览列表、分页信息以及是否有下一页的封装对象
@@ -121,7 +130,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         // 2. 初始化 MyBatis-Plus 的 Lambda 查询条件构造器
         LambdaQueryWrapper<PaperEntity> queryWrapper = new LambdaQueryWrapper<>();
-        
+
         // 3. 动态构建关键字匹配条件：只要标题、文件名、作者列表(JSON字符串)或 DOI 中包含关键字即视为命中
         String trimmedKeyword = trimToNull(keyword);
         if (trimmedKeyword != null) {
@@ -134,18 +143,18 @@ public class DocumentServiceImpl implements DocumentService {
                     .or()
                     .like(PaperEntity::getDoi, trimmedKeyword));
         }
-        
+
         // 4. 动态构建年份精确匹配条件
         if (year != null) {
             queryWrapper.eq(PaperEntity::getYear, year);
         }
-        
+
         // 5. 动态构建来源模糊匹配条件
         String trimmedVenue = trimToNull(venue);
         if (trimmedVenue != null) {
             queryWrapper.like(PaperEntity::getVenue, trimmedVenue);
         }
-        
+
         // 6. 设定默认排序规则：优先按上传时间倒序排列，若时间相同则按主键 ID 倒序（保证分页时的顺序稳定性）
         queryWrapper.orderByDesc(PaperEntity::getUploadTime).orderByDesc(PaperEntity::getPaperId);
 
@@ -160,7 +169,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .map(paper -> toSummary(paper, md5ToCollectionName))
                 .toList();
 
-        // 8. 组装并返回自定义的分页结果对象，通过对比当前页和总页数来确定 hasNext (是否有下一页) 标志
+        // 9. 组装并返回自定义的分页结果对象，通过对比当前页和总页数来确定 hasNext（是否有下一页）标志
         return new PageResultDTO<>(
                 items,
                 safePage,
@@ -191,7 +200,6 @@ public class DocumentServiceImpl implements DocumentService {
                 new LambdaQueryWrapper<PaperLocationsEntity>()
                         .eq(PaperLocationsEntity::getPaperMd5, paper.getPaperMd5()));
 
-        // 第一步：删除 MinIO（外部，不可回滚，先执行）
         if (locations != null) {
             if (StringUtils.hasText(locations.getMinioOriginalKey())) {
                 objectStorageService.deleteObject(locations.getMinioOriginalKey());
@@ -208,13 +216,14 @@ public class DocumentServiceImpl implements DocumentService {
             }
         }
 
-        // 第二步：删除 Zotero（外部，不可回滚，先执行）
         if (locations != null && StringUtils.hasText(locations.getZoteroItemKey())) {
             zoteroImportService.deleteItem(locations.getZoteroItemKey());
             log.info("Deleted Zotero item: {}", locations.getZoteroItemKey());
         }
 
-        // 第三步：前面都成功，最后删 MySQL（内部，可回滚）
+        paperVectorSearchIndexService.deleteByPaperMd5(paper.getPaperMd5());
+        log.info("Deleted Elasticsearch vector documents for paperMd5: {}", paper.getPaperMd5());
+        // 最后删除数据库记录，确保 ES 删除失败时不会留下孤儿向量文档
         if (locations != null) {
             paperLocationsMapper.deleteById(locations.getId());
         }
@@ -227,15 +236,17 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 协调完整的文档解析流程：
-     * 包括上传原文件至对象存储(MinIO)、调用 MinerU 进行 PDF 解析、调用 Zotero 提取文献元数据，
-     * 最后将解析好的元数据保存到数据库，并更新处理进度状态。
+     * 执行 MinerU 解析流水线：上传原始 PDF 到 MinIO → 提交 MinerU 解析 → 轮询等待完成 →
+     * 下载并解压完整 ZIP 产物 → 导入 Zotero 提取元数据 → 组装实体入库 → 发送向量化任务到 Kafka。
+     * <p>
+     * 该方法是整个文献上传流程的核心编排方法。每个步骤的失败都有明确的错误码和状态更新，
+     * 确保前端可以通过 traceId 轮询到最新的解析进度。
      *
-     * @param file                用户上传的 PDF 原始文件
-     * @param uploadDocument      上传文档的元数据传输对象 (包含 traceId 等信息)
-     * @param actualPaperMd5      实际计算出的文件内容 MD5，用于校验
-     * @param actualFileSizeBytes 实际的文件字节大小
-     * @return MinerUParseResult 包含 MinerU 的 batchId 和解析产物 ZIP 的完整下载链接
+     * @param file                 前端上传的原始 PDF 文件
+     * @param uploadDocument       前端提交的元数据（含 traceId、预期 MD5、文件大小等）
+     * @param actualPaperMd5       后端实际计算的 PDF MD5（服务端权威值）
+     * @param actualFileSizeBytes  后端实际获取的文件大小（服务端权威值）
+     * @return MinerU 解析结果（含 batchId 和产物下载地址）
      */
     private MinerUParseResult parseWithMinerU(
             MultipartFile file,
@@ -244,30 +255,33 @@ public class DocumentServiceImpl implements DocumentService {
             long actualFileSizeBytes
     ) {
         try {
-            // 1. 提取业务追踪 ID 与安全的文件名
-            String traceId = uploadDocument.getTraceId();
+        String traceId = uploadDocument.getTraceId();
             String fileName = safeFileName(uploadDocument.getFileName());
-            
-            // 2. 读取 PDF 文件的字节数组
+
             byte[] pdfBytes = readFileBytes(file);
-            
-            // 3. 将用户上传的原始 PDF 文件持久化到对象存储 (MinIO)
+
+            // 1. 将原始 PDF 上传到 MinIO 对象存储
             uploadOriginalPdf(pdfBytes, traceId, fileName);
-            
-            // 4. 调用 MinerU 服务进行文档的结构化解析，提取文本、公式和图表等内容
+
+            // 2. 提交 MinerU 解析任务并轮询等待完成
             MinerUParseResult parseResult = parseByMinerU(
                     pdfBytes,
                     traceId,
                     fileName
             );
-            
-            // 5. 调用 Zotero 服务导入 PDF，识别并提取高质量的学术元数据 (如标题、作者、年份、DOI等)
+
+            // 3. 下载 MinerU 解析产物的完整 ZIP 包，解压后上传到 MinIO
+            //    ZIP 中包含 full.md（完整 Markdown）和 content_list_v2.json（结构化内容块列表）等文件
+            //    这些文件是后续向量化的数据源
+            // 4. 将 PDF 发送到 Zotero 桌面软件，利用其元数据识别能力提取标题、作者、DOI 等信息
+
+            // 5. 调用 Zotero 导入服务，利用其元数据识别能力从 PDF 提取标题、作者、DOI 等结构化信息
             ZoteroImportService.ZoteroImportResult zoteroResult = zoteroImportService.importParsedPaper(
                     pdfBytes,
                     fileName,
                     traceId
             );
-            
+
             // 6. 将提取到的 Zotero 元数据与基础文件信息组装为实体类，并保存到数据库
             PaperEntity paperEntity = toPaperEntity(
                     uploadDocument,
@@ -276,6 +290,14 @@ public class DocumentServiceImpl implements DocumentService {
                     fileName,
                     zoteroResult.metadata()
             );
+            // 6a. 在数据库写入前，先将向量化任务发送到 Kafka（异步解耦，失败不影响主流程）
+            paperVectorIndexProducer.send(toPaperVectorIndexTask(
+                    uploadDocument,
+                    actualPaperMd5,
+                    actualFileSizeBytes,
+                    fileName,
+                    zoteroResult.metadata()
+            ));
             paperMapper.insert(paperEntity);
 
             // 7. 写入文献位置信息（MinIO + Zotero）
@@ -292,18 +314,15 @@ public class DocumentServiceImpl implements DocumentService {
             locations.setZoteroCollectionName(zoteroResult.collectionName());
             paperLocationsMapper.insert(locations);
 
-            // 8. 若一切顺利，更新数据库中该任务的进度状态为”解析完成”
             progressService.updateParseStatus(traceId, PARSE_STATUS_PARSED_VALUE);
-            
+
             return parseResult;
         } catch (BusinessException exception) {
-            // 若在解析过程中抛出已知的业务异常（例如 Zotero 连接失败、MinerU 超时等）
-            // 将状态更新为“解析失败”，并原样向上抛出以便给前端展示确切的错误提示
+            // 业务异常：保留原始错误码（如文件太大、重复上传等），仅更新解析状态为失败
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
             throw exception;
         } catch (RuntimeException exception) {
-            // 捕获未知的运行时异常进行兜底处理，更新状态为“解析失败”
-            // 并且将其统一包装为 MinerU 解析失败的业务异常抛出，防止暴露底层的堆栈或敏感细节
+            // 非预期运行时异常：统一包装为 MINERU_PARSE_FAILED 错误码
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
             throw new BusinessException(ErrorCode.MINERU_PARSE_FAILED, ErrorCode.MINERU_PARSE_FAILED.getMessage());
         }
@@ -361,55 +380,47 @@ public class DocumentServiceImpl implements DocumentService {
         );
     }
 
-    /**
-     * 解压 MinerU 返回的 ZIP 包，并将其中的关键解析产物上传到对象存储（如 MinIO）
-     *
-     * @param fullZipBytes MinerU 返回的完整 ZIP 文件的字节数组
-     * @param traceId      当前上传流程的追踪 ID
-     */
+
     private void uploadMinerUArtifacts(byte[] fullZipBytes, String traceId) {
-        // 标记是否成功提取到了核心文件 full.md
+        // 标记是否已找到 full.md（MinerU 输出的完整 Markdown 文件）
         boolean hasFullMarkdown = false;
-        // 标记是否成功提取到了核心文件 content_list_v2.json
+        // 标记是否已找到 content_list_v2.json（MinerU 输出的结构化内容块列表）
         boolean hasContentListV2 = false;
-        
-        // 使用 try-with-resources 自动关闭流，将字节数组转换为 ZIP 输入流以供读取
+
         try (ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(fullZipBytes))) {
             ZipEntry entry;
-            // 遍历 ZIP 包中的每一个条目（文件或目录）
+            // 遍历 ZIP 包中的每一个条目（文件或目录），按需上传到 MinIO
             while ((entry = zipInputStream.getNextEntry()) != null) {
-                // 跳过目录，只处理实际文件
+                // 跳过目录条目，只处理实际文件
                 if (entry.isDirectory()) {
                     continue;
                 }
 
-                // 获取经过安全校验后的相对文件路径（防止 Zip Slip 路径穿越漏洞）
                 String relativeName = safeZipEntryName(entry);
                 String storageName = minerUArtifactStorageName(relativeName);
-                // 过滤不需要的文件，判断当前文件是否是我们需要的解析产物
+                // 跳过不需要存储的文件（非 full.md 且非 content_list_v2.json）
                 if (!StringUtils.hasText(storageName)) {
                     continue;
                 }
 
-                // 读取当前 ZIP 文件条目的完整内容为字节数组
+                // 读取 ZIP 条目内容到内存字节数组
                 byte[] content = readZipEntry(zipInputStream);
-                // 调用对象存储服务，将文件上传到 MinIO
-                // 存储路径由 traceId 和相对路径组合而成，contentType 则根据文件后缀推断
+                // 上传到 MinIO，对象键由 traceId 和文件名组成；
+                // Content-Type 根据文件扩展名自动推断（.md → text/markdown, .json → application/json）
                 objectStorageService.putObject(
                         minerUArtifactObjectKey(traceId, storageName),
                         content,
                         contentType(storageName)
                 );
-                // 检查当前处理的文件是否为必备的核心产物，并更新标志位
                 hasFullMarkdown = hasFullMarkdown || "full.md".equals(storageName);
                 hasContentListV2 = hasContentListV2 || "content_list_v2.json".equals(storageName);
             }
         } catch (IOException exception) {
-            // 捕获解压过程中的 IO 异常并转化为业务异常
+            // ZIP 读取或解压过程中的 IO 异常统一包装为业务异常
             throw minerUFailed("MinerU full ZIP extraction failed: " + exception.getMessage());
         }
 
-        // 校验产物完整性：如果缺失全量 Markdown 或核心内容列表 JSON，则视为解析异常/失败
+        // 完整性校验：必须同时包含 full.md 和 content_list_v2.json 两个关键文件
         if (!hasFullMarkdown || !hasContentListV2) {
             throw minerUFailed("MinerU full ZIP missing required artifacts");
         }
@@ -423,6 +434,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private String safeZipEntryName(ZipEntry entry) {
         String entryName = entry.getName().replace('\\', '/');
+        // 防止 ZIP 路径穿越攻击（如 ../../etc/passwd）
         if ("..".equals(entryName) || entryName.startsWith("../") || entryName.contains("/../")) {
             throw minerUFailed("MinerU full ZIP contains unsafe entry: " + entry.getName());
         }
@@ -573,6 +585,53 @@ public class DocumentServiceImpl implements DocumentService {
         paper.setDoi(metadata.doi());
         paper.setUploadTime(uploadDocument.getSubmissionTime().toLocalDateTime());
         return paper;
+    }
+
+    /**
+     * 构建论文向量索引任务对象。
+     * <p>
+     * 将上传信息、Zotero 识别元数据、MinIO 文件路径组装为 {@link PaperVectorIndexTask}，
+     * 供 Kafka 生产者发送到向量化队列。消费者端将从 MinIO 读取 MinerU 解析产物并执行向量化。
+     * </p>
+     *
+     * @param uploadDocument      前端上传请求中的元数据
+     * @param actualPaperMd5      后端实际计算的 PDF MD5
+     * @param actualFileSizeBytes 后端实际获取的文件大小
+     * @param fileName            原始文件名
+     * @param metadata            Zotero 识别的论文元数据（标题、作者、年份等）
+     * @return 填充完整的向量索引任务对象
+     */
+    private PaperVectorIndexTask toPaperVectorIndexTask(
+            UploadDocumentDTO uploadDocument,
+            String actualPaperMd5,
+            long actualFileSizeBytes,
+            String fileName,
+            ZoteroImportService.ZoteroPaperMetadata metadata
+    ) {
+        String traceId = uploadDocument.getTraceId();
+        PaperVectorIndexTask task = new PaperVectorIndexTask();
+        task.setTaskId(traceId + ":" + actualPaperMd5); // 任务 ID = traceId:md5，全局唯一
+        task.setTraceId(traceId);
+        task.setPaperMd5(actualPaperMd5);
+        task.setFileName(fileName);
+        task.setFileSizeBytes(actualFileSizeBytes);
+        task.setSubmissionTime(uploadDocument.getSubmissionTime());
+        task.setMinioBucket(minioProperties.getBucketName()); // MinIO 桶名（如 "literatures"）
+        // MinerU 解析产物的两个关键文件路径
+        task.setContentListObjectKey(minerUArtifactObjectKey(traceId, "content_list_v2.json"));
+        task.setFullMarkdownObjectKey(minerUArtifactObjectKey(traceId, "full.md"));
+        // 标题：优先 Zotero 识别的标题，回退到文件名推断（去 .pdf 后缀）
+        task.setTitle(StringUtils.hasText(metadata.title()) ? metadata.title() : titleFromFileName(fileName));
+        // 作者/关键词：Zotero 未识别到则为空列表
+        task.setAuthors(metadata.authors() == null ? List.of() : metadata.authors());
+        task.setKeywords(metadata.keywords() == null ? List.of() : metadata.keywords());
+        // 语言：Zotero 未识别到则默认 "en"
+        task.setLanguage(StringUtils.hasText(metadata.language()) ? metadata.language() : "en");
+        task.setYear(metadata.year());
+        task.setVenue(metadata.venue());
+        task.setDoi(metadata.doi());
+        task.setModelVersion(DEFAULT_EMBEDDING_MODEL_VERSION); // Embedding 模型版本号
+        return task;
     }
 
     private String writeJsonArray(List<String> values) {

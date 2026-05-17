@@ -1,0 +1,108 @@
+{
+  "mappings": {
+    "properties": {
+      "paperMd5": {
+        "type": "keyword"
+      },
+      "traceId": {
+        "type": "keyword"
+      },
+      "chunkIndex": {
+        "type": "integer"
+      },
+      "chunkType": {
+        "type": "keyword"
+      },
+      "textContent": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart"
+      },
+      "rawText": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart"
+      },
+      "vector": {
+        "type": "dense_vector",
+        "dims": 2048,
+        "index": true,
+        "similarity": "cosine"
+      },
+      "modelVersion": {
+        "type": "keyword"
+      },
+      "title": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "authors": {
+        "type": "keyword"
+      },
+      "authorText": {
+        "type": "text"
+      },
+      "keywords": {
+        "type": "keyword"
+      },
+      "language": {
+        "type": "keyword"
+      },
+      "year": {
+        "type": "integer"
+      },
+      "venue": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "doi": {
+        "type": "keyword"
+      },
+      "fileName": {
+        "type": "keyword"
+      },
+      "sectionTitle": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "sectionPath": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "pageStart": {
+        "type": "integer"
+      },
+      "pageEnd": {
+        "type": "integer"
+      },
+      "bbox": {
+        "type": "integer"
+      },
+      "sourceObjectKey": {
+        "type": "keyword"
+      },
+      "contentHash": {
+        "type": "keyword"
+      },
+      "createdAt": {
+        "type": "date"
+      }
+    }
+  }
+}

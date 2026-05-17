@@ -9,10 +9,11 @@ import com.kesf.backend.dto.UploadProgressDTO;
 import com.kesf.backend.entity.PaperEntity;
 import com.kesf.backend.exception.BusinessException;
 import com.kesf.backend.exception.ErrorCode;
+import com.kesf.backend.kafka.PaperVectorIndexTask;
 import com.kesf.backend.mapper.PaperLocationsMapper;
 import com.kesf.backend.mapper.PaperMapper;
+import com.kesf.backend.service.PaperVectorIndexProducer;
 import com.kesf.backend.service.impl.DocumentServiceImpl;
-import com.kesf.backend.utils.MinerUClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -51,7 +53,7 @@ class DocumentServiceImplTests {
     private PaperUploadParseProgressService progressService;
 
     @Mock
-    private MinerUClient minerUClient;
+    private com.kesf.backend.utils.MinerUClient minerUClient;
 
     @Mock
     private ZoteroImportService zoteroImportService;
@@ -61,6 +63,12 @@ class DocumentServiceImplTests {
 
     @Mock
     private PaperLocationsMapper paperLocationsMapper;
+
+    @Mock
+    private PaperVectorIndexProducer paperVectorIndexProducer;
+
+    @Mock
+    private PaperVectorSearchIndexService paperVectorSearchIndexService;
 
     private DocumentServiceImpl documentService;
 
@@ -77,7 +85,9 @@ class DocumentServiceImplTests {
                 minerUProperties,
                 zoteroImportService,
                 objectStorageService,
-                minioProperties
+                minioProperties,
+                paperVectorIndexProducer,
+                paperVectorSearchIndexService
         );
     }
 
@@ -87,9 +97,9 @@ class DocumentServiceImplTests {
         MockMultipartFile file = pdfFile();
         when(paperMapper.selectOne(any(Wrapper.class))).thenReturn(null);
         when(minerUClient.requestSignedUploadUrl("attention.pdf", "trace-001"))
-                .thenReturn(new MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
+                .thenReturn(new com.kesf.backend.utils.MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
         when(minerUClient.getBatchResult("batch-001", "trace-001"))
-                .thenReturn(new MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
+                .thenReturn(new com.kesf.backend.utils.MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
         when(minerUClient.downloadFullZip("https://mineru.example/full.zip"))
                 .thenReturn(minerUZipBytes());
         when(zoteroImportService.importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001"))
@@ -131,8 +141,31 @@ class DocumentServiceImplTests {
         );
         verifyNoMoreInteractions(objectStorageService);
         verify(zoteroImportService).importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001");
+        ArgumentCaptor<PaperVectorIndexTask> indexTaskCaptor = ArgumentCaptor.forClass(PaperVectorIndexTask.class);
+        verify(paperVectorIndexProducer).send(indexTaskCaptor.capture());
+        PaperVectorIndexTask indexTask = indexTaskCaptor.getValue();
+        assertThat(indexTask.getTaskId()).isEqualTo("trace-001:" + PDF_MD5);
+        assertThat(indexTask.getTraceId()).isEqualTo("trace-001");
+        assertThat(indexTask.getPaperMd5()).isEqualTo(PDF_MD5);
+        assertThat(indexTask.getFileName()).isEqualTo("attention.pdf");
+        assertThat(indexTask.getFileSizeBytes()).isEqualTo((long) PDF_BYTES.length);
+        assertThat(indexTask.getMinioBucket()).isEqualTo("literatures");
+        assertThat(indexTask.getContentListObjectKey()).isEqualTo("uploads/trace-001/mineru/content_list_v2.json");
+        assertThat(indexTask.getFullMarkdownObjectKey()).isEqualTo("uploads/trace-001/mineru/full.md");
+        assertThat(indexTask.getTitle()).isEqualTo("The response of flow duration curves to afforestation");
+        assertThat(indexTask.getAuthors()).containsExactly("Patrick N.J. Lane", "Alice E. Best");
+        assertThat(indexTask.getKeywords()).containsExactly("hydrology");
+        assertThat(indexTask.getLanguage()).isEqualTo("en");
+        assertThat(indexTask.getYear()).isEqualTo(2005);
+        assertThat(indexTask.getVenue()).isEqualTo("Journal of Hydrology");
+        assertThat(indexTask.getDoi()).isEqualTo("10.1016/j.jhydrol.2005.01.006");
+        assertThat(indexTask.getModelVersion()).isEqualTo("text-embedding-v4");
+
         ArgumentCaptor<PaperEntity> paperCaptor = ArgumentCaptor.forClass(PaperEntity.class);
         verify(paperMapper).insert(paperCaptor.capture());
+        var inOrder = inOrder(paperVectorIndexProducer, paperMapper);
+        inOrder.verify(paperVectorIndexProducer).send(any(PaperVectorIndexTask.class));
+        inOrder.verify(paperMapper).insert(any(PaperEntity.class));
         PaperEntity insertedPaper = paperCaptor.getValue();
         assertThat(insertedPaper.getPaperMd5()).isEqualTo(PDF_MD5);
         assertThat(insertedPaper.getFileName()).isEqualTo("attention.pdf");
@@ -162,9 +195,9 @@ class DocumentServiceImplTests {
         MockMultipartFile file = pdfFile();
         when(paperMapper.selectOne(any(Wrapper.class))).thenReturn(null);
         when(minerUClient.requestSignedUploadUrl("attention.pdf", "trace-001"))
-                .thenReturn(new MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
+                .thenReturn(new com.kesf.backend.utils.MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
         when(minerUClient.getBatchResult("batch-001", "trace-001"))
-                .thenReturn(new MinerUClient.BatchFileResult("done", "", ""));
+                .thenReturn(new com.kesf.backend.utils.MinerUClient.BatchFileResult("done", "", ""));
 
         assertThatThrownBy(() -> documentService.uploadDocument(file, dto))
                 .isInstanceOf(BusinessException.class)
@@ -182,9 +215,9 @@ class DocumentServiceImplTests {
         MockMultipartFile file = pdfFile();
         when(paperMapper.selectOne(any(Wrapper.class))).thenReturn(null);
         when(minerUClient.requestSignedUploadUrl("attention.pdf", "trace-001"))
-                .thenReturn(new MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
+                .thenReturn(new com.kesf.backend.utils.MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
         when(minerUClient.getBatchResult("batch-001", "trace-001"))
-                .thenReturn(new MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
+                .thenReturn(new com.kesf.backend.utils.MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
         when(minerUClient.downloadFullZip("https://mineru.example/full.zip"))
                 .thenReturn(minerUZipBytes());
         when(zoteroImportService.importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001"))
@@ -233,6 +266,44 @@ class DocumentServiceImplTests {
 
         verify(progressService, never()).recordUploadProgress(any());
         verify(paperMapper, never()).insert(any(PaperEntity.class));
+    }
+
+    @Test
+    void deleteDocumentDeletesElasticsearchVectorsBeforeMysqlRecords() {
+        PaperEntity paper = new PaperEntity();
+        paper.setPaperId(10001L);
+        paper.setPaperMd5(PDF_MD5);
+        paper.setFileName("attention.pdf");
+
+        var locations = new com.kesf.backend.entity.PaperLocationsEntity();
+        locations.setId(20001L);
+        locations.setPaperMd5(PDF_MD5);
+        locations.setMinioOriginalKey("uploads/trace-001/original/attention.pdf");
+        locations.setMinioParsedPrefix("uploads/trace-001/mineru/");
+        locations.setZoteroItemKey("ITEM-KEY-001");
+
+        when(paperMapper.selectById(10001L)).thenReturn(paper);
+        when(paperLocationsMapper.selectOne(any(Wrapper.class))).thenReturn(locations);
+
+        var result = documentService.deleteDocument(10001L);
+
+        assertThat(result).containsEntry("deleted", true)
+                .containsEntry("paperId", 10001L);
+        var inOrder = inOrder(
+                objectStorageService,
+                zoteroImportService,
+                paperVectorSearchIndexService,
+                paperLocationsMapper,
+                paperMapper
+        );
+        inOrder.verify(objectStorageService).deleteObject("uploads/trace-001/original/attention.pdf");
+        inOrder.verify(objectStorageService).deleteObjectsByPrefix("uploads/trace-001/mineru/");
+        inOrder.verify(objectStorageService).deleteObjectsByPrefix("uploads/trace-001/");
+        inOrder.verify(zoteroImportService).deleteItem("ITEM-KEY-001");
+        inOrder.verify(paperVectorSearchIndexService).deleteByPaperMd5(PDF_MD5);
+        inOrder.verify(paperLocationsMapper).deleteById(20001L);
+        inOrder.verify(paperMapper).deleteById(10001L);
+        verify(paperVectorIndexProducer, never()).send(any(PaperVectorIndexTask.class));
     }
 
     @Test

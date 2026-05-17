@@ -6,6 +6,8 @@ public interface ObjectStorageService {
 
     void putObject(String objectKey, byte[] content, String contentType);
 
+    byte[] getObjectBytes(String objectKey);
+
     void deleteObject(String objectKey);
 
     void deleteObjectsByPrefix(String prefix);
