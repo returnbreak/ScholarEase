@@ -17,5 +17,5 @@ import org.springframework.stereotype.Component;
 public class ScholarEaseElasticsearchProperties {
 
     /** Elasticsearch 索引名称，所有论文向量文档写入此索引 */
-    private String indexName = "scholarease_base";
+    private String indexName = "scholarease_bge_m3";
 }

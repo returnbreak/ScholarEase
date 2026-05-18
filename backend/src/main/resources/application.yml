@@ -94,15 +94,15 @@ minio:
 
 embedding:
   api:
-    url: ${EMBEDDING_API_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
-    key: ${EMBEDDING_API_KEY:}
-    model: ${EMBEDDING_API_MODEL:text-embedding-v4}
+    url: ${EMBEDDING_API_URL:https://api.deepinfra.com/v1/openai}
+    key: ${DEEPINFRA_API_TOKEN:${EMBEDDING_API_KEY:}}
+    model: ${EMBEDDING_API_MODEL:BAAI/bge-m3}
     batch-size: ${EMBEDDING_API_BATCH_SIZE:10}
-    dimension: ${EMBEDDING_API_DIMENSION:2048}
+    dimension: ${EMBEDDING_API_DIMENSION:1024}
     timeout-seconds: ${EMBEDDING_API_TIMEOUT_SECONDS:30}
 
 elasticsearch:
-  index-name: ${ELASTICSEARCH_INDEX_NAME:scholarease_base}
+  index-name: ${ELASTICSEARCH_INDEX_NAME:scholarease_bge_m3}
 
 logging:
   file:

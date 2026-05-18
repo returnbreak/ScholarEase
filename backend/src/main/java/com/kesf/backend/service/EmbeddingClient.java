@@ -6,7 +6,7 @@ import java.util.List;
  * 文本向量化（Embedding）客户端接口。
  * <p>
  * 定义将文本列表转换为浮点向量列表的契约。不同的实现可以对接不同的 Embedding 服务
- * （如阿里云 DashScope、OpenAI、本地模型等），调用方无需关心底层 API 细节。
+ * （如 DeepInfra、OpenAI-compatible、本地模型等），调用方无需关心底层 API 细节。
  * </p>
  */
 public interface EmbeddingClient {

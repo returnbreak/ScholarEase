@@ -56,7 +56,7 @@ class KafkaPaperVectorIndexProducerTests {
         task.setYear(2017);
         task.setVenue("NeurIPS");
         task.setDoi("10.5555/3295222.3295349");
-        task.setModelVersion("text-embedding-v4");
+        task.setModelVersion("BAAI/bge-m3");
 
         // ---- 执行：发送任务 ----
         producer.send(task);

@@ -80,7 +80,7 @@ class PaperVectorizationServiceTests {
         assertThat(documents.get(0).getChunkType()).isEqualTo("title");
         assertThat(documents.get(0).getTextContent()).contains("Paper: Attention Is All You Need");
         assertThat(documents.get(0).getVector()).containsExactly(0.1f, 0.2f);
-        assertThat(documents.get(0).getModelVersion()).isEqualTo("text-embedding-v4");
+        assertThat(documents.get(0).getModelVersion()).isEqualTo("BAAI/bge-m3");
         assertThat(documents.get(0).getSourceObjectKey())
                 .isEqualTo("uploads/trace-001/mineru/content_list_v2.json");
         assertThat(documents.get(1).getRawText()).contains("Self-attention connects all positions.");
@@ -153,7 +153,7 @@ class PaperVectorizationServiceTests {
         task.setYear(2017);
         task.setVenue("NeurIPS");
         task.setDoi("10.5555/3295222.3295349");
-        task.setModelVersion("text-embedding-v4");
+        task.setModelVersion("BAAI/bge-m3");
         return task;
     }
 

@@ -116,7 +116,7 @@ class PaperChunkBuildServiceTests {
         task.setYear(2005);
         task.setVenue("Journal of Hydrology");
         task.setDoi("10.1016/j.jhydrol.2005.01.006");
-        task.setModelVersion("text-embedding-v4");
+        task.setModelVersion("BAAI/bge-m3");
         return task;
     }
 }

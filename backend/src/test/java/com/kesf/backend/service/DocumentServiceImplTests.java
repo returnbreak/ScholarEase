@@ -159,7 +159,7 @@ class DocumentServiceImplTests {
         assertThat(indexTask.getYear()).isEqualTo(2005);
         assertThat(indexTask.getVenue()).isEqualTo("Journal of Hydrology");
         assertThat(indexTask.getDoi()).isEqualTo("10.1016/j.jhydrol.2005.01.006");
-        assertThat(indexTask.getModelVersion()).isEqualTo("text-embedding-v4");
+        assertThat(indexTask.getModelVersion()).isEqualTo("BAAI/bge-m3");
 
         ArgumentCaptor<PaperEntity> paperCaptor = ArgumentCaptor.forClass(PaperEntity.class);
         verify(paperMapper).insert(paperCaptor.capture());
@@ -210,16 +210,10 @@ class DocumentServiceImplTests {
     }
 
     @Test
-    void uploadDocumentMarksProgressFailedWhenZoteroWriteFailsAfterMinerUParseSucceeded() {
+    void uploadDocumentMarksProgressFailedWhenZoteroWriteFailsBeforeMinerUParseStarts() {
         UploadDocumentDTO dto = uploadDto(PDF_MD5, (long) PDF_BYTES.length);
         MockMultipartFile file = pdfFile();
         when(paperMapper.selectOne(any(Wrapper.class))).thenReturn(null);
-        when(minerUClient.requestSignedUploadUrl("attention.pdf", "trace-001"))
-                .thenReturn(new com.kesf.backend.utils.MinerUClient.SignedUpload("batch-001", "https://signed.example/upload"));
-        when(minerUClient.getBatchResult("batch-001", "trace-001"))
-                .thenReturn(new com.kesf.backend.utils.MinerUClient.BatchFileResult("done", "", "https://mineru.example/full.zip"));
-        when(minerUClient.downloadFullZip("https://mineru.example/full.zip"))
-                .thenReturn(minerUZipBytes());
         when(zoteroImportService.importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001"))
                 .thenThrow(new BusinessException(ErrorCode.ZOTERO_WRITE_FAILED, "Zotero import failed"));
 
@@ -232,6 +226,7 @@ class DocumentServiceImplTests {
         verify(zoteroImportService).importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001");
         verify(progressService).updateParseStatus("trace-001", 3);
         verify(progressService, never()).updateParseStatus("trace-001", 2);
+        verify(minerUClient, never()).requestSignedUploadUrl(any(), any());
         verify(paperMapper, never()).insert(any(PaperEntity.class));
     }
 

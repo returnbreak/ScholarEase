@@ -6,7 +6,10 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.indices.get_mapping.IndexMappingRecord;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import com.kesf.backend.config.EmbeddingProperties;
 import com.kesf.backend.config.ScholarEaseElasticsearchProperties;
 import com.kesf.backend.service.PaperVectorSearchIndexService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +44,7 @@ public class ElasticsearchPaperIndexService implements PaperVectorSearchIndexSer
 
     private final ElasticsearchClient elasticsearchClient;
     private final ScholarEaseElasticsearchProperties properties;
+    private final EmbeddingProperties embeddingProperties;
 
     /** classpath 中的索引映射定义文件（JSON 格式），包含字段类型、分词器、向量维度等配置 */
     @Value("classpath:es-mappings/scholarease_base.json")
@@ -150,8 +154,33 @@ public class ElasticsearchPaperIndexService implements PaperVectorSearchIndexSer
                         .index(properties.getIndexName())
                         .withJson(new StringReader(mappingJson)));
                 log.info("Elasticsearch index created: {}", properties.getIndexName());
+            } else {
+                validateExistingVectorMapping();
             }
             indexChecked = true;
+        }
+    }
+
+    private void validateExistingVectorMapping() throws Exception {
+        IndexMappingRecord mappingRecord = elasticsearchClient.indices()
+                .getMapping(request -> request.index(properties.getIndexName()))
+                .result()
+                .get(properties.getIndexName());
+        if (mappingRecord == null || mappingRecord.mappings() == null) {
+            return;
+        }
+        Property vectorProperty = mappingRecord.mappings().properties().get("vector");
+        if (vectorProperty == null || !vectorProperty.isDenseVector()) {
+            return;
+        }
+        Integer actualDims = vectorProperty.denseVector().dims();
+        int expectedDims = embeddingProperties.getDimension();
+        if (actualDims != null && actualDims != expectedDims) {
+            throw new IllegalStateException("Elasticsearch index " + properties.getIndexName()
+                    + " has vector dims " + actualDims
+                    + " but embedding model " + embeddingProperties.getModel()
+                    + " expects " + expectedDims
+                    + ". Delete/recreate the index or use a new index name before re-indexing papers.");
         }
     }
 }

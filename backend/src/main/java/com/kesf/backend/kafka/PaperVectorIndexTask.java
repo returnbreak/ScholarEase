@@ -74,6 +74,6 @@ public class PaperVectorIndexTask {
     /** 数字对象唯一标识符（DOI） */
     private String doi;
 
-    /** 向量化使用的 Embedding 模型版本，如 "text-embedding-v4" */
+    /** 向量化使用的 Embedding 模型版本，如 "BAAI/bge-m3" */
     private String modelVersion;
 }

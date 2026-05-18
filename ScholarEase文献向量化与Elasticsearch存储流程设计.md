@@ -113,7 +113,7 @@ scholarease:
   "year": 2017,
   "venue": "NeurIPS",
   "doi": "10.5555/3295222.3295349",
-  "modelVersion": "text-embedding-v4"
+  "modelVersion": "BAAI/bge-m3"
 }
 ```
 
@@ -292,7 +292,7 @@ Type: {chunkType}
   "textContent": "Paper: ...\nSection: ...\n\n正文内容",
   "rawText": "正文内容",
   "vector": [0.0123, -0.0456],
-  "modelVersion": "text-embedding-v4",
+  "modelVersion": "BAAI/bge-m3",
   "title": "Attention Is All You Need",
   "authors": ["Ashish Vaswani", "Noam Shazeer"],
   "authorText": "Ashish Vaswani, Noam Shazeer",
@@ -337,7 +337,7 @@ Type: {chunkType}
 | `bbox` | `integer` 数组 | 页面坐标 |
 | `sourceObjectKey` | `keyword` | 回溯 MinIO 解析产物 |
 
-索引名第一版可沿用 PaiSmart 风格使用 `knowledge_base`，也可使用更明确的 `scholarease_paper_chunks`。如果后续要混合多类知识库，建议将索引名做成配置项。
+索引名第一版默认使用 `scholarease_bge_m3`，明确标识当前索引使用 `BAAI/bge-m3` 的 1024 维向量。如果本地已有旧的 `scholarease_base` 2048 维索引，不要混用；应保留旧索引并切到新索引名，或删除旧索引后重建。
 
 ---
 
@@ -350,11 +350,11 @@ Type: {chunkType}
 ```yaml
 embedding:
   api:
-    url: https://dashscope.aliyuncs.com/compatible-mode/v1
-    key: ${DASHSCOPE_API_KEY:}
-    model: text-embedding-v4
+    url: https://api.deepinfra.com/v1/openai
+    key: ${DEEPINFRA_API_TOKEN:${EMBEDDING_API_KEY:}}
+    model: BAAI/bge-m3
     batch-size: 10
-    dimension: 2048
+    dimension: 1024
 ```
 
 Consumer 将 `PaperChunk.contextText` 批量传入 embedding 服务：

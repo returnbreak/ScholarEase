@@ -20,20 +20,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 阿里云 DashScope（灵积）Embedding 客户端。
+ * OpenAI-compatible Embedding 客户端。
  * <p>
- * 对接 DashScope 兼容 OpenAI 格式的 Embedding API（compatible-mode/v1/embeddings）。
+ * 默认对接 DeepInfra 兼容 OpenAI 格式的 Embedding API（/v1/openai/embeddings）。
  * 支持批量文本输入，自动按 {@code batchSize} 分批调用，返回与输入文本等长的向量列表。
  * </p>
  * <p>
  * API 请求格式：
  * </p>
  * <pre>
- * POST /compatible-mode/v1/embeddings
+ * POST /v1/openai/embeddings
  * {
- *   "model": "text-embedding-v4",
+ *   "model": "BAAI/bge-m3",
  *   "input": ["text1", "text2", ...],
- *   "dimension": 2048,
  *   "encoding_format": "float"
  * }
  * </pre>
@@ -41,7 +40,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DashScopeEmbeddingClient implements EmbeddingClient {
+public class OpenAiCompatibleEmbeddingClient implements EmbeddingClient {
 
     private final EmbeddingProperties properties;
     private final ObjectMapper objectMapper;
@@ -89,7 +88,6 @@ public class DashScopeEmbeddingClient implements EmbeddingClient {
             Map<String, Object> requestBody = new LinkedHashMap<>();
             requestBody.put("model", properties.getModel());
             requestBody.put("input", batch);
-            requestBody.put("dimension", properties.getDimension());
             requestBody.put("encoding_format", "float"); // 返回 float 数组而非 base64 编码
 
             HttpRequest request = HttpRequest.newBuilder(embeddingEndpoint())

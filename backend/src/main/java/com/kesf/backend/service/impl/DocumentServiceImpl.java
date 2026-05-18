@@ -64,7 +64,7 @@ public class DocumentServiceImpl implements DocumentService {
     private static final String MINERU_STATE_DONE = "done";
     private static final String MINERU_STATE_FAILED = "failed";
     /** 默认的文本向量化模型版本，写入 Kafka 任务供消费者端调用 Embedding API 时使用 */
-    private static final String DEFAULT_EMBEDDING_MODEL_VERSION = "text-embedding-v4";
+    private static final String DEFAULT_EMBEDDING_MODEL_VERSION = "BAAI/bge-m3";
 
     private final PaperMapper paperMapper;
     private final PaperLocationsMapper paperLocationsMapper;
