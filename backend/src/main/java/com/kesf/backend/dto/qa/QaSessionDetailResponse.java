@@ -6,12 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QaSessionResponse {
+public class QaSessionDetailResponse {
 
     private String sessionId;
 
@@ -20,4 +21,6 @@ public class QaSessionResponse {
     private OffsetDateTime createdAt;
 
     private OffsetDateTime updatedAt;
+
+    private List<QaChatMessageDTO> messages;
 }

@@ -57,10 +57,12 @@ class QaPropertiesTests {
                 entry("scholarease.qa.rerank-output-top-k", "9"),
                 entry("scholarease.qa.final-context-min-chunks", "3"),
                 entry("scholarease.qa.final-context-max-chunks", "7"),
-                entry("scholarease.qa.chat.provider", "deepseek"),
-                entry("scholarease.qa.chat.adapter", "OpenAiStreamingChatModel"),
                 entry("scholarease.qa.chat.base-url", "https://api.deepseek.com"),
+                entry("scholarease.qa.chat.api-key", "sk-test"),
                 entry("scholarease.qa.chat.model-name", "deepseek-v4-pro"),
+                entry("scholarease.qa.chat.temperature", "0.3"),
+                entry("scholarease.qa.chat.top-p", "0.8"),
+                entry("scholarease.qa.chat.timeout-seconds", "50"),
                 entry("scholarease.qa.chat.model-max-tokens.deepseek-v4-pro", "8192"),
                 entry("scholarease.qa.chat.model-max-tokens.deepseek-v4-flash", "4096"),
                 entry("scholarease.qa.prompts.rewrite-prompt", "rewrite {message}"),
@@ -86,10 +88,12 @@ class QaPropertiesTests {
         assertThat(properties.getFinalContextMaxChunks()).isEqualTo(7);
 
         // 4. 验证聊天模型配置绑定正确
-        assertThat(properties.getChat().getProvider()).isEqualTo("deepseek");
-        assertThat(properties.getChat().getAdapter()).isEqualTo("OpenAiStreamingChatModel");
         assertThat(properties.getChat().getBaseUrl()).isEqualTo("https://api.deepseek.com");
+        assertThat(properties.getChat().getApiKey()).isEqualTo("sk-test");
         assertThat(properties.getChat().getModelName()).isEqualTo("deepseek-v4-pro");
+        assertThat(properties.getChat().getTemperature()).isEqualTo(0.3);
+        assertThat(properties.getChat().getTopP()).isEqualTo(0.8);
+        assertThat(properties.getChat().getTimeoutSeconds()).isEqualTo(50);
         assertThat(properties.getChat().resolveMaxTokens()).isEqualTo(8192);
         assertThat(properties.getChat().getModelMaxTokens())
                 .containsEntry("deepseek-v4-flash", 4096);

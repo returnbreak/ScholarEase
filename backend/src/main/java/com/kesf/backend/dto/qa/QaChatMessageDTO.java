@@ -5,19 +5,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.OffsetDateTime;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QaSessionResponse {
+public class QaChatMessageDTO {
 
-    private String sessionId;
+    private String id;
 
-    private String title;
+    private String role;
 
-    private OffsetDateTime createdAt;
+    private String content;
 
-    private OffsetDateTime updatedAt;
+    private List<QaCitationDTO> citations;
 }

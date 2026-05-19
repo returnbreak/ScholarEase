@@ -30,20 +30,19 @@ public class QueryTranslationService {
     private static final Pattern ASCII_TERM = Pattern.compile("[A-Za-z][A-Za-z0-9_+\\-./]{1,}");
     private static final int REWRITE_TIMEOUT_SECONDS = 60;
 
-    private final StreamingChatModel streamingChatModel;
     private final ObjectMapper objectMapper;
     private final QaProperties qaProperties;
 
-    public QueryRewriteResult rewrite(String userMessage) {
+    public QueryRewriteResult rewrite(String userMessage, StreamingChatModel chatModel) {
         try {
-            return rewriteByStreamingModel(userMessage);
+            return rewriteByStreamingModel(userMessage, chatModel);
         } catch (Exception exception) {
             log.warn("Query rewrite model call failed, fallback to local rewrite: {}", exception.getMessage());
             return fallbackRewrite(userMessage);
         }
     }
 
-    private QueryRewriteResult rewriteByStreamingModel(String userMessage) throws Exception {
+    private QueryRewriteResult rewriteByStreamingModel(String userMessage, StreamingChatModel chatModel) throws Exception {
         if (!StringUtils.hasText(userMessage)) {
             return fallbackRewrite(userMessage);
         }
@@ -52,7 +51,7 @@ public class QueryTranslationService {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
-        streamingChatModel.chat(rewritePrompt(userMessage), new StreamingChatResponseHandler() {
+        chatModel.chat(rewritePrompt(userMessage), new StreamingChatResponseHandler() {
             @Override
             public void onPartialResponse(String token) {
                 buffer.append(token);

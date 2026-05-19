@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import {
@@ -19,7 +19,7 @@ import { useChatSessionsStore } from '@/stores/chatSessions'
 const route = useRoute()
 const router = useRouter()
 const chatSessions = useChatSessionsStore()
-const { currentSessionId, sessions } = storeToRefs(chatSessions)
+const { currentSessionId, isLoaded, sessions } = storeToRefs(chatSessions)
 const collapsed = ref(false)
 const historyExpanded = ref(true)
 
@@ -29,18 +29,30 @@ function notifySessionSwitch() {
   window.dispatchEvent(new CustomEvent('scholarease:qa-session-switched'))
 }
 
-function createChatSession() {
-  chatSessions.createSession()
+onMounted(() => {
+  void chatSessions.loadSessions()
+})
+
+async function createChatSession() {
+  await chatSessions.createSession()
   notifySessionSwitch()
   router.push({ name: 'chat' })
 }
 
-function switchChatSession(sessionId: string) {
+async function switchChatSession(sessionId: string) {
   if (sessionId !== currentSessionId.value) {
-    chatSessions.switchSession(sessionId)
+    await chatSessions.switchSession(sessionId)
     notifySessionSwitch()
   }
   router.push({ name: 'chat' })
+}
+
+async function deleteChatSession(sessionId: string) {
+  const wasActiveSession = await chatSessions.deleteSession(sessionId)
+  if (wasActiveSession) {
+    notifySessionSwitch()
+    router.push({ name: 'chat' })
+  }
 }
 </script>
 
@@ -92,6 +104,7 @@ function switchChatSession(sessionId: string) {
                 class="history-new-button"
                 :icon="Plus"
                 circle
+                :disabled="!isLoaded"
                 text
                 @click="createChatSession"
               />
@@ -99,16 +112,38 @@ function switchChatSession(sessionId: string) {
           </div>
 
           <div v-show="historyExpanded" class="history-list">
-            <button
+            <div
               v-for="session in sessions"
               :key="session.id"
               class="history-item"
               :class="{ active: session.id === currentSessionId }"
-              type="button"
-              @click="switchChatSession(session.id)"
             >
-              <span>{{ session.title }}</span>
-            </button>
+              <button
+                class="history-select-button"
+                type="button"
+                @click="switchChatSession(session.id)"
+              >
+                <span>{{ session.title }}</span>
+              </button>
+              <el-popconfirm
+                title="删除这个对话？"
+                confirm-button-text="删除"
+                cancel-button-text="取消"
+                width="180"
+                @confirm="deleteChatSession(session.id)"
+              >
+                <template #reference>
+                  <button
+                    class="history-delete-button"
+                    type="button"
+                    title="删除对话"
+                    @click.stop
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </button>
+                </template>
+              </el-popconfirm>
+            </div>
           </div>
         </div>
       </section>
@@ -306,12 +341,22 @@ function switchChatSession(sessionId: string) {
 }
 
 .history-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   min-height: 34px;
-  padding: 6px 10px 6px 28px;
-  border: 0;
+  padding-right: 6px;
   border-radius: 8px;
+  background: transparent;
+}
+
+.history-select-button {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  padding: 8px 4px 8px 28px;
+  border: 0;
   background: transparent;
   color: #514b43;
   cursor: pointer;
@@ -320,20 +365,59 @@ function switchChatSession(sessionId: string) {
   text-align: left;
 }
 
-.history-item span {
+.history-select-button span {
   display: block;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.history-delete-button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #897f71;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.history-item:hover .history-delete-button,
+.history-delete-button:focus-visible {
+  opacity: 1;
+}
+
+.history-delete-button:hover {
+  background: rgba(129, 47, 47, 0.12);
+  color: #7f2f2f;
+}
+
+.history-item.active .history-delete-button {
+  color: #405648;
+}
+
 .history-item:hover {
   background: #ece4d7;
+}
+
+.history-item:hover .history-select-button {
   color: #26392f;
 }
 
 .history-item.active {
   background: rgba(38, 57, 47, 0.12);
+}
+
+.history-item.active .history-select-button {
   color: #26392f;
   font-weight: 700;
 }

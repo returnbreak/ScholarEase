@@ -1,40 +1,55 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue' // 从 Vue 引入 computed 和 ref：computed 用于派生渲染后的 HTML，ref 用于声明可响应的界面状态。
-import { Promotion, Setting } from '@element-plus/icons-vue' // 从 Element Plus 图标库引入发送图标和设置图标，供模板中的按钮使用。
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { Promotion, Setting } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-import katex from 'katex' // 引入 KaTeX，用于把 LaTeX 公式字符串渲染成真正的数学排版 HTML。
-import 'katex/dist/katex.min.css' // 引入 KaTeX 官方样式，否则生成的公式 HTML 没有正确字体、间距和上下标排版。
-import ModelSettingsDialog from '@/components/ModelSettingsDialog.vue' // 引入模型设置弹窗组件，点击右上角设置按钮时显示。
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
+import ModelSettingsDialog from '@/components/ModelSettingsDialog.vue'
 import { useChatSessionsStore, type ChatMessage, type QaCitation } from '@/stores/chatSessions'
-import { useModelSettingsStore } from '@/stores/modelSettings' // 引入模型设置 Pinia store，用来读取当前模型预设和模型名称。
+import { useModelSettingsStore } from '@/stores/modelSettings'
 
 defineOptions({ name: 'ChatAssistantView' })
 
-const modelSettingsVisible = ref(false) // 控制模型设置弹窗是否显示；false 表示页面初始不打开弹窗。
-const inputMessage = ref('') // 保存底部输入框中的用户输入内容；模板通过 v-model 和它双向绑定。
+// 控制模型设置弹窗是否显示；false 表示页面初始不打开弹窗
+const modelSettingsVisible = ref(false)
+// 保存底部输入框中的用户输入内容；模板通过 v-model 和它双向绑定
+const inputMessage = ref('')
+// 获取聊天会话 Store 实例
 const chatSessions = useChatSessionsStore()
-const modelSettings = useModelSettingsStore() // 获取模型设置 store 实例；模板会读取 activePreset.label 和 modelName。
-const { activeSessionTitle, currentSessionId: sessionId, messages } = storeToRefs(chatSessions)
+// 获取模型设置 Store 实例；模板会读取供应商展示名和模型名称
+const modelSettings = useModelSettingsStore()
+// 使用 storeToRefs 解构出 Store 中的响应式状态，保持其响应性
+const { activeSessionTitle, currentSessionId: activeSessionId, messages } = storeToRefs(chatSessions)
 
+// 定义 WebSocket 响应的数据结构
 interface QaWebSocketResponse {
+  // 消息类型，用于区分不同的事件
   type?: 'connection' | 'metadata' | 'token' | 'completion' | 'error'
+  // 消息内容（通常是 token 或错误信息）
   content?: string
+  // 附加数据，例如会话 ID、消息 ID 和引用列表
   data?: {
     sessionId?: string
     messageId?: string
     citations?: QaCitation[]
   }
+  // 错误信息
   error?: string
 }
 
+// 标记当前是否正在进行流式输出
 const isStreaming = ref(false)
+// 当 AI 正在思考时，显示“Thinking...”动画的消息 ID
 const thinkingMessageId = ref('')
+// WebSocket 实例的引用
 const qaSocket = ref<WebSocket | null>(null)
+// 用于确保 WebSocket 连接只建立一次的 Promise 任务
 const socketReadyTask = ref<Promise<WebSocket> | null>(null)
+// 当前正在接收流式内容的助手消息 ID
 let activeAssistantMessageId = ''
 
-// 响应式的消息列表，用于存储当前对话的所有历史记录。
-// 计算属性：遍历 messages，把里面原始的 Markdown 文本预先渲染成 HTML。
+// 计算属性：将原始消息列表中的 Markdown 内容渲染为 HTML，供模板直接使用 v-html
+// 遍历 messages，把里面原始的 Markdown 文本预先渲染成 HTML。
 // 这样模板里直接 v-html="message.renderedContent" 即可，当 messages 变化时自动更新。
 const renderedMessages = computed(() =>
   messages.value.map((message) => ({
@@ -43,25 +58,27 @@ const renderedMessages = computed(() =>
   })),
 )
 
+// 重置流式输出相关的状态变量
 function resetStreamingState() {
   isStreaming.value = false
   thinkingMessageId.value = ''
   activeAssistantMessageId = ''
 }
 
+// 处理外部触发的会话切换事件（例如侧边栏点击切换）
 function handleExternalSessionSwitch() {
   resetStreamingState()
   closeQaSocket()
 }
 
+// 监听自定义事件，当会话切换时重置状态并关闭旧的 WebSocket 连接
 window.addEventListener('scholarease:qa-session-switched', handleExternalSessionSwitch)
 
 /**
  * 确保当前有一个可用的会话 ID (sessionId)。
- * 如果已经存在（从 localStorage 中读取的），则直接返回；
- * 否则在前端生成一个新的会话 ID，并持久化到本地。
+ * 会话来源统一走后端 Redis；如果当前还没有会话，则请求后端创建。
  */
-function ensureSession() {
+async function ensureSession() {
   return chatSessions.ensureSessionId()
 }
 
@@ -70,19 +87,20 @@ function ensureSession() {
  */
 async function sendMessage() {
   const text = inputMessage.value.trim()
-  // 防抖：空内容或正在输出流式消息时不允许发送新消息
+  // 防抖：如果输入为空或正在流式输出中，则不发送消息
   if (!text || isStreaming.value) {
     return
   }
+  const currentSessionId = await ensureSession()
+  const sessionTitle = chatSessions.ensureTitleFromQuestion(text)
 
-  // 1. 将用户的提问加入到消息列表中
+  // 1. 将用户的提问消息添加到聊天记录中
   chatSessions.addMessage({
     id: crypto.randomUUID(),
     role: 'user',
     content: text,
   })
-  chatSessions.ensureTitleFromQuestion(text)
-  // 2. 预先创建一个空的助手回复对象，用于后续接收流式生成的字符
+  // 2. 预先创建一个空的助手回复消息对象，用于接收后续流式生成的文本
   const assistantMessage: ChatMessage = {
     id: crypto.randomUUID(),
     role: 'assistant',
@@ -90,33 +108,36 @@ async function sendMessage() {
   }
   chatSessions.addMessage(assistantMessage)
   
-  // 3. 清空输入框并设置状态为正在流式输出
+  // 3. 清空输入框，设置流式输出状态，并显示“Thinking”动画
   inputMessage.value = ''
   isStreaming.value = true
   thinkingMessageId.value = assistantMessage.id
   activeAssistantMessageId = assistantMessage.id
 
   try {
-    // 4. 复用当前会话的 WebSocket 发送问题，后端会持续推送本轮 token。
+    // 4. 确保 WebSocket 连接已建立并处于打开状态，然后发送用户消息
     const socket = await ensureQaSocket()
     socket.send(
       JSON.stringify({
-        sessionId: ensureSession(),
+        sessionId: currentSessionId,
+        sessionTitle,
+        modelConfig: modelSettings.toRequestConfig(),
         message: text,
       }),
     )
   } catch (error) {
-    // 发生异常时，把错误信息也拼接到回复气泡里展示给用户
+    // 如果发送消息过程中发生同步错误（如 WebSocket 连接失败），则将错误信息追加到助手消息中
     appendAssistantContent(
       assistantMessage.id,
       `\n\n${error instanceof Error ? error.message : 'WebSocket 问答失败'}`,
     )
     resetStreamingState()
   } finally {
-    // 正常流式结束由 WebSocket completion 事件负责；这里仅兜底处理同步失败。
+    // 正常流式输出的结束由 WebSocket 的 'completion' 事件处理；这里的 finally 块仅用于处理同步阶段的错误。
   }
 }
 
+// 将内容追加到指定助手消息的 content 字段
 function appendAssistantContent(messageId: string, content: string) {
   if (!content) {
     return
@@ -124,38 +145,49 @@ function appendAssistantContent(messageId: string, content: string) {
   chatSessions.appendMessageContent(messageId, content)
 }
 
+// 为指定助手消息设置引用列表
 function setAssistantCitations(messageId: string, citations: QaCitation[]) {
   chatSessions.setMessageCitations(messageId, citations)
 }
 
+// 根据当前页面的协议（http/https）动态生成 WebSocket 连接 URL
 function qaWebSocketUrl() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${protocol}//${window.location.host}/api/qa/ws`
 }
 
+// 确保 WebSocket 连接处于打开状态，如果未连接则尝试建立新连接
 function ensureQaSocket() {
   const existing = qaSocket.value
+  // 如果已存在打开的连接，直接返回该连接
   if (existing?.readyState === WebSocket.OPEN) {
     return Promise.resolve(existing)
   }
+  // 如果有正在建立的连接任务，则返回该任务的 Promise
   if (socketReadyTask.value) {
     return socketReadyTask.value
   }
 
+  // 否则，创建一个新的 Promise 来处理 WebSocket 连接的建立
   socketReadyTask.value = new Promise<WebSocket>((resolve, reject) => {
     const socket = new WebSocket(qaWebSocketUrl())
     qaSocket.value = socket
 
+    // 连接成功建立时
     socket.onopen = () => {
       socketReadyTask.value = null
       resolve(socket)
     }
 
+    // 接收到消息时
     socket.onmessage = handleQaSocketMessage
 
+    // 连接发生错误时
     socket.onerror = () => {
+      // 判断错误发生时连接是否还在建立中
       const wasConnecting = socket.readyState === WebSocket.CONNECTING
       reject(new Error('WebSocket 连接失败'))
+      // 如果不是连接建立阶段的错误，且有激活的助手消息，则追加错误信息
       if (!wasConnecting && activeAssistantMessageId) {
         appendAssistantContent(activeAssistantMessageId, '\n\nWebSocket 连接失败')
       }
@@ -166,6 +198,7 @@ function ensureQaSocket() {
     }
 
     socket.onclose = () => {
+      // 如果关闭的是当前活跃的 socket 实例，则清空引用
       if (qaSocket.value === socket) {
         qaSocket.value = null
       }
@@ -182,35 +215,52 @@ function ensureQaSocket() {
   return socketReadyTask.value
 }
 
+// 处理 WebSocket 接收到的消息
 function handleQaSocketMessage(event: MessageEvent) {
   let payload: QaWebSocketResponse
   try {
+    // 尝试解析 JSON 消息
     payload = JSON.parse(event.data)
   } catch {
+    // 解析失败则按错误处理
     handleQaSocketError('WebSocket 响应解析失败')
     return
   }
 
   if (payload.type === 'token') {
+    // 如果是 token 类型，清空思考状态，并将 token 追加到助手消息内容
     thinkingMessageId.value = ''
     appendAssistantContent(activeAssistantMessageId, payload.content ?? '')
   } else if (payload.type === 'metadata') {
+    if (payload.data?.sessionId && payload.data.sessionId !== activeSessionId.value) {
+      console.warn('QA sessionId mismatch', {
+        frontendSessionId: activeSessionId.value,
+        backendSessionId: payload.data.sessionId,
+      })
+    }
+    // 如果是 metadata 类型，设置助手消息的引用列表
     setAssistantCitations(activeAssistantMessageId, payload.data?.citations ?? [])
   } else if (payload.type === 'error') {
+    // 如果是 error 类型，处理错误
     handleQaSocketError(payload.error ?? 'WebSocket 问答失败')
   } else if (payload.type === 'completion') {
+    // 如果是 completion 类型，重置流式状态，表示回答结束
     resetStreamingState()
+    void chatSessions.refreshCurrentSession()
   }
 }
 
+// 处理 WebSocket 相关的错误
 function handleQaSocketError(message: string) {
   if (activeAssistantMessageId) {
+    // 如果有激活的助手消息，则追加错误信息
     appendAssistantContent(activeAssistantMessageId, `\n\n${message}`)
   }
   resetStreamingState()
   closeQaSocket()
 }
 
+// 关闭 WebSocket 连接
 function closeQaSocket() {
   const socket = qaSocket.value
   qaSocket.value = null
@@ -220,9 +270,15 @@ function closeQaSocket() {
   }
 }
 
+// 组件卸载前，移除事件监听器并关闭 WebSocket 连接
 onBeforeUnmount(() => {
   window.removeEventListener('scholarease:qa-session-switched', handleExternalSessionSwitch)
   closeQaSocket()
+})
+
+// 组件挂载后，加载会话列表
+onMounted(() => {
+  void chatSessions.loadSessions()
 })
 
 function escapeHtml(value: string) { // 定义 HTML 转义函数，参数 value 是即将被插入 HTML 的原始文本。
@@ -475,7 +531,7 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
     <div class="chat-toolbar">
       <div class="active-session-pill">{{ activeSessionTitle }}</div>
       <div class="model-pill">
-        <span>{{ modelSettings.activePreset.label }}</span>
+        <span>{{ modelSettings.providerLabel }}</span>
         <strong>{{ modelSettings.modelName }}</strong>
       </div>
       <el-tooltip content="模型设置" placement="bottom">

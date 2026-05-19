@@ -14,6 +14,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -108,6 +109,33 @@ class ZoteroImportServiceImplTests {
     }
 
     @Test
+    void importParsedPaperWaitsWhenStandaloneAttachmentLaterGetsParentItem() throws IOException {
+        byte[] pdfBytes = "%PDF-1.7\nScholarEase\n%%EOF".getBytes(StandardCharsets.UTF_8);
+        ZoteroServerState state = new ZoteroServerState();
+        state.standaloneThenParent = true;
+        server = startServer(state);
+
+        ZoteroProperties properties = properties(server);
+        properties.setMetadataMaxAttempts(2);
+        ZoteroImportServiceImpl service = new ZoteroImportServiceImpl(properties, new ObjectMapper());
+
+        ZoteroImportService.ZoteroImportResult result = service.importParsedPaper(
+                pdfBytes,
+                "attention.pdf",
+                "trace-001"
+        );
+
+        assertThat(result.canRecognize()).isTrue();
+        assertThat(result.parentItemKey()).isEqualTo("PARENT1");
+        assertThat(result.metadata().title()).isEqualTo("The response of flow duration curves to afforestation");
+        assertThat(result.metadata().authors()).containsExactly(
+                "Patrick N.J. Lane",
+                "Alice E. Best"
+        );
+        assertThat(state.itemsSinceQueryCount.get()).isEqualTo(2);
+    }
+
+    @Test
     void importParsedPaperFallsBackToFileNameWhenZoteroMetadataIsUnavailable() throws IOException {
         byte[] pdfBytes = "%PDF-1.7\nScholarEase\n%%EOF".getBytes(StandardCharsets.UTF_8);
         ZoteroServerState state = new ZoteroServerState();
@@ -156,24 +184,13 @@ class ZoteroImportServiceImplTests {
             exchange.getResponseHeaders().add("Last-Modified-Version", "10");
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             if (query != null && query.contains("since=10")) {
+                int sinceQueryCount = state.itemsSinceQueryCount.incrementAndGet();
                 if (state.hideImportedAttachment) {
                     response = "[]".getBytes(StandardCharsets.UTF_8);
+                } else if (state.standaloneThenParent && sinceQueryCount == 1) {
+                    response = standaloneAttachmentResponse(state.attachmentTitle);
                 } else if (state.standaloneAttachment) {
-                    response = ("""
-                            [
-                              {
-                                "key": "ATTACH1",
-                                "data": {
-                                  "key": "ATTACH1",
-                                  "itemType": "attachment",
-                                  "title": "%s",
-                                  "url": "scholarease://documents/trace-001",
-                                  "contentType": "application/pdf",
-                                  "tags": []
-                                }
-                              }
-                            ]
-                            """).formatted(state.attachmentTitle).getBytes(StandardCharsets.UTF_8);
+                    response = standaloneAttachmentResponse(state.attachmentTitle);
                 } else {
                     response = """
                         [
@@ -240,6 +257,24 @@ class ZoteroImportServiceImplTests {
         return server;
     }
 
+    private static byte[] standaloneAttachmentResponse(String attachmentTitle) {
+        return ("""
+                [
+                  {
+                    "key": "ATTACH1",
+                    "data": {
+                      "key": "ATTACH1",
+                      "itemType": "attachment",
+                      "title": "%s",
+                      "url": "scholarease://documents/trace-001",
+                      "contentType": "application/pdf",
+                      "tags": []
+                    }
+                  }
+                ]
+                """).formatted(attachmentTitle).getBytes(StandardCharsets.UTF_8);
+    }
+
     private static ZoteroProperties properties(HttpServer server) {
         ZoteroProperties properties = new ZoteroProperties();
         properties.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
@@ -267,8 +302,10 @@ class ZoteroImportServiceImplTests {
         private int saveAttachmentStatusCode = 201;
         private boolean canRecognize = true;
         private boolean standaloneAttachment;
+        private boolean standaloneThenParent;
         private boolean hideImportedAttachment;
         private String attachmentTitle = "PDF";
+        private final AtomicInteger itemsSinceQueryCount = new AtomicInteger();
         private final AtomicReference<CapturedRequest> savedAttachment = new AtomicReference<>();
     }
 }

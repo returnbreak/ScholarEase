@@ -196,6 +196,7 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
             String safeFileName
     ) {
         int maxAttempts = Math.max(1, properties.getMetadataMaxAttempts());
+        ImportedAttachment standaloneAttachment = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             // 尝试查找包含我们 sourceUrl 的附件，并获取其所属的父项目 (即 Zotero 为该 PDF 生成的条目)
             ImportedAttachment importedAttachment = findImportedAttachment(sourceUrl, previousLibraryVersion);
@@ -205,18 +206,28 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
                         importedAttachment.parentItemKey());
             }
             if (importedAttachment != null && StringUtils.hasText(importedAttachment.attachmentItemKey())) {
-                log.warn(
-                        "Zotero imported PDF as standalone attachment, fallback to attachment metadata: sourceUrl={}, attachmentItemKey={}",
+                standaloneAttachment = importedAttachment;
+                log.debug(
+                        "Zotero imported PDF is still standalone, waiting for parent metadata: sourceUrl={}, attachmentItemKey={}, attempt={}/{}",
                         sourceUrl,
-                        importedAttachment.attachmentItemKey()
+                        importedAttachment.attachmentItemKey(),
+                        attempt,
+                        maxAttempts
                 );
-                return new RecognizedResult(false, fallbackAttachmentMetadata(importedAttachment.data(), safeFileName),
-                        importedAttachment.attachmentItemKey());
             }
             // 如果还没找到，并且未达到最大重试次数，则休眠等待后继续下一轮轮询
             if (attempt < maxAttempts) {
                 sleepBeforeNextMetadataPoll();
             }
+        }
+        if (standaloneAttachment != null) {
+            log.warn(
+                    "Zotero imported PDF as standalone attachment after metadata polling, fallback to attachment metadata: sourceUrl={}, attachmentItemKey={}",
+                    sourceUrl,
+                    standaloneAttachment.attachmentItemKey()
+            );
+            return new RecognizedResult(false, fallbackAttachmentMetadata(standaloneAttachment.data(), safeFileName),
+                    standaloneAttachment.attachmentItemKey());
         }
         log.warn(
                 "Zotero metadata was not available after PDF import, fallback to filename metadata: sourceUrl={}, fileName={}",

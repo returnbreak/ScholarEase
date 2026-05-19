@@ -155,6 +155,7 @@ public class QaProperties {
                 {evidence}
 
                 请只依据上述证据用中文回答。每个关键结论后标注证据编号，例如 [S1]。
+                回答必须使用 Markdown 格式输出，以便前端正确渲染标题、列表、表格、公式和代码块。
                 如果证据不足，明确说明“当前检索到的证据不足以回答”。
                 """;
 
@@ -162,6 +163,7 @@ public class QaProperties {
                 你是 ScholarEase 的论文问答助手。
                 只能依据给定 evidence 回答，不允许编造论文事实。
                 使用中文回答。
+                使用 Markdown 格式组织回答，必要时使用标题、列表、表格、公式或代码块。
                 每个关键结论后必须引用证据编号。
                 不要输出没有来源的论文结论。
                 """;
@@ -177,29 +179,27 @@ public class QaProperties {
     public static class Chat {
 
         /**
-         * LLM 提供商名称，如 "deepseek"、"openai"、"zhipu" 等。
-         * 默认使用 DeepSeek。
-         */
-        private String provider = "deepseek";
-
-        /**
-         * LangChain4j 中使用的流式聊天模型适配器类名。
-         * 通过适配器模式屏蔽不同 LLM 提供商的 API 差异，
-         * 默认使用 OpenAI 兼容的流式适配器 "OpenAiStreamingChatModel"。
-         */
-        private String adapter = "OpenAiStreamingChatModel";
-
-        /**
          * LLM API 的基础 URL 地址。
          * 默认为 DeepSeek 的官方 API 地址。
          */
         private String baseUrl = "https://api.deepseek.com";
 
         /**
+         * LLM API Key。优先通过环境变量注入，前端未填写 apiKey 时使用它作为兜底。
+         */
+        private String apiKey = "";
+
+        /**
          * 当前使用的具体模型名称。
          * 默认为 "deepseek-v4-pro"，即 DeepSeek 的旗舰推理模型。
          */
         private String modelName = "deepseek-v4-pro";
+
+        private Double temperature = 0.2;
+
+        private Double topP = 0.9;
+
+        private Integer timeoutSeconds = 60;
 
         /**
          * 各模型与其最大输出 Token 数的映射关系。

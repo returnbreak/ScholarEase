@@ -55,17 +55,6 @@ spring:
     listener:
       ack-mode: record
 
-langchain4j:
-  open-ai:
-    streaming-chat-model:
-      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
-      api-key: ${DEEPSEEK_API_KEY:${QA_STREAMING_CHAT_API_KEY:}}
-      model-name: ${DEEPSEEK_MODEL_NAME:deepseek-v4-pro}
-      temperature: ${DEEPSEEK_TEMPERATURE:${QA_STREAMING_CHAT_TEMPERATURE:0.2}}
-      max-tokens: ${DEEPSEEK_MAX_TOKENS:${DEEPSEEK_V4_PRO_MAX_TOKENS:8192}}
-      log-requests: ${DEEPSEEK_LOG_REQUESTS:${QA_STREAMING_CHAT_LOG_REQUESTS:false}}
-      log-responses: ${DEEPSEEK_LOG_RESPONSES:${QA_STREAMING_CHAT_LOG_RESPONSES:false}}
-
 scholarease:
   kafka:
     consumerGroup: paper-vector-index-group
@@ -76,10 +65,12 @@ scholarease:
   qa:
     enabled: true
     chat:
-      provider: deepseek
-      adapter: OpenAiStreamingChatModel
       baseUrl: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      apiKey: ${DEEPSEEK_API_KEY:${QA_STREAMING_CHAT_API_KEY:}}
       modelName: ${DEEPSEEK_MODEL_NAME:deepseek-v4-pro}
+      temperature: ${DEEPSEEK_TEMPERATURE:${QA_STREAMING_CHAT_TEMPERATURE:0.2}}
+      topP: ${DEEPSEEK_TOP_P:0.9}
+      timeoutSeconds: ${DEEPSEEK_TIMEOUT_SECONDS:60}
       modelMaxTokens:
         deepseek-v4-pro: ${DEEPSEEK_V4_PRO_MAX_TOKENS:8192}
         deepseek-v4-flash: ${DEEPSEEK_V4_FLASH_MAX_TOKENS:4096}
@@ -121,11 +112,13 @@ scholarease:
         {evidence}
 
         请只依据上述证据用中文回答。每个关键结论后标注证据编号，例如 [S1]。
+        回答必须使用 Markdown 格式输出，以便前端正确渲染标题、列表、表格、公式和代码块。
         如果证据不足，明确说明“当前检索到的证据不足以回答”。
       systemPrompt: |
         你是 ScholarEase 的论文问答助手。
         只能依据给定 evidence 回答，不允许编造论文事实。
         使用中文回答。
+        使用 Markdown 格式组织回答，必要时使用标题、列表、表格、公式或代码块。
         每个关键结论后必须引用证据编号。
         不要输出没有来源的论文结论。
 
