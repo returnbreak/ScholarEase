@@ -55,6 +55,17 @@ spring:
     listener:
       ack-mode: record
 
+langchain4j:
+  open-ai:
+    streaming-chat-model:
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      api-key: ${DEEPSEEK_API_KEY:${QA_STREAMING_CHAT_API_KEY:}}
+      model-name: ${DEEPSEEK_MODEL_NAME:deepseek-v4-pro}
+      temperature: ${DEEPSEEK_TEMPERATURE:${QA_STREAMING_CHAT_TEMPERATURE:0.2}}
+      max-tokens: ${DEEPSEEK_MAX_TOKENS:${DEEPSEEK_V4_PRO_MAX_TOKENS:8192}}
+      log-requests: ${DEEPSEEK_LOG_REQUESTS:${QA_STREAMING_CHAT_LOG_REQUESTS:false}}
+      log-responses: ${DEEPSEEK_LOG_RESPONSES:${QA_STREAMING_CHAT_LOG_RESPONSES:false}}
+
 scholarease:
   kafka:
     consumerGroup: paper-vector-index-group
@@ -62,6 +73,61 @@ scholarease:
     paperVectorIndexReplicas: 1
     topics:
       paperVectorIndex: paper-vector-index-topic
+  qa:
+    enabled: true
+    chat:
+      provider: deepseek
+      adapter: OpenAiStreamingChatModel
+      baseUrl: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      modelName: ${DEEPSEEK_MODEL_NAME:deepseek-v4-pro}
+      modelMaxTokens:
+        deepseek-v4-pro: ${DEEPSEEK_V4_PRO_MAX_TOKENS:8192}
+        deepseek-v4-flash: ${DEEPSEEK_V4_FLASH_MAX_TOKENS:4096}
+    historyRecentTurns: ${QA_HISTORY_RECENT_TURNS:20}
+    redisSessionTtlDays: ${QA_REDIS_SESSION_TTL_DAYS:30}
+    vectorTopK: ${QA_VECTOR_TOP_K:40}
+    vectorNumCandidates: ${QA_VECTOR_NUM_CANDIDATES:200}
+    bm25TopK: ${QA_BM25_TOP_K:40}
+    rrfK: ${QA_RRF_K:60}
+    mergedTopK: ${QA_MERGED_TOP_K:60}
+    rerankInputTopK: ${QA_RERANK_INPUT_TOP_K:60}
+    rerankOutputTopK: ${QA_RERANK_OUTPUT_TOP_K:10}
+    finalContextMinChunks: ${QA_FINAL_CONTEXT_MIN_CHUNKS:4}
+    finalContextMaxChunks: ${QA_FINAL_CONTEXT_MAX_CHUNKS:8}
+    prompts:
+      rewritePrompt: |
+        你是 ScholarEase 的论文检索 query rewrite 模块。
+        用户会用中文询问英文论文内容。请把问题改写为适合 Elasticsearch BM25 检索的英文 query。
+        要求：
+        1. 保留模型名、方法名、数据集名、指标名、公式符号等专有名词。
+        2. 不要引入用户问题中不存在的论文事实。
+        3. 只输出 JSON，不要 Markdown，不要解释。
+
+        JSON schema:
+        {
+          "standaloneQuestionZh": "中文独立问题",
+          "queryEn": "English retrieval query",
+          "bm25Keywords": ["keyword"],
+          "exactTerms": ["exact term"]
+        }
+
+        用户问题：
+        {message}
+      groundedUserMessage: |
+        用户问题：
+        {message}
+
+        检索证据：
+        {evidence}
+
+        请只依据上述证据用中文回答。每个关键结论后标注证据编号，例如 [S1]。
+        如果证据不足，明确说明“当前检索到的证据不足以回答”。
+      systemPrompt: |
+        你是 ScholarEase 的论文问答助手。
+        只能依据给定 evidence 回答，不允许编造论文事实。
+        使用中文回答。
+        每个关键结论后必须引用证据编号。
+        不要输出没有来源的论文结论。
 
 mineru:
   enabled: true

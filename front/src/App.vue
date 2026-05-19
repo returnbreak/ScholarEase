@@ -28,7 +28,11 @@ const isChatRoute = computed(() => route.name === 'chat')
 
       <!-- RouterView 会渲染 router/index.ts 中当前路由对应的页面组件。 -->
       <el-main class="main-panel" :class="{ 'chat-main-panel': isChatRoute }">
-        <RouterView />
+        <RouterView v-slot="{ Component }">
+          <KeepAlive include="ChatAssistantView">
+            <component :is="Component" />
+          </KeepAlive>
+        </RouterView>
       </el-main>
     </el-container>
   </el-container>

@@ -1,61 +1,229 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue' // 从 Vue 引入 computed 和 ref：computed 用于派生渲染后的 HTML，ref 用于声明可响应的界面状态。
+import { computed, onBeforeUnmount, ref } from 'vue' // 从 Vue 引入 computed 和 ref：computed 用于派生渲染后的 HTML，ref 用于声明可响应的界面状态。
 import { Promotion, Setting } from '@element-plus/icons-vue' // 从 Element Plus 图标库引入发送图标和设置图标，供模板中的按钮使用。
+import { storeToRefs } from 'pinia'
 import katex from 'katex' // 引入 KaTeX，用于把 LaTeX 公式字符串渲染成真正的数学排版 HTML。
 import 'katex/dist/katex.min.css' // 引入 KaTeX 官方样式，否则生成的公式 HTML 没有正确字体、间距和上下标排版。
 import ModelSettingsDialog from '@/components/ModelSettingsDialog.vue' // 引入模型设置弹窗组件，点击右上角设置按钮时显示。
+import { useChatSessionsStore, type ChatMessage, type QaCitation } from '@/stores/chatSessions'
 import { useModelSettingsStore } from '@/stores/modelSettings' // 引入模型设置 Pinia store，用来读取当前模型预设和模型名称。
+
+defineOptions({ name: 'ChatAssistantView' })
 
 const modelSettingsVisible = ref(false) // 控制模型设置弹窗是否显示；false 表示页面初始不打开弹窗。
 const inputMessage = ref('') // 保存底部输入框中的用户输入内容；模板通过 v-model 和它双向绑定。
+const chatSessions = useChatSessionsStore()
 const modelSettings = useModelSettingsStore() // 获取模型设置 store 实例；模板会读取 activePreset.label 和 modelName。
+const { activeSessionTitle, currentSessionId: sessionId, messages } = storeToRefs(chatSessions)
 
-// 示例 Markdown 内容本身保持干净，方便后续直接替换为接口返回的 assistant.content。
-const exampleMarkdown = `# RAG 检索增强生成概览
+interface QaWebSocketResponse {
+  type?: 'connection' | 'metadata' | 'token' | 'completion' | 'error'
+  content?: string
+  data?: {
+    sessionId?: string
+    messageId?: string
+    citations?: QaCitation[]
+  }
+  error?: string
+}
 
-RAG 的核心思想是：先从外部知识库中检索相关证据，再把证据交给大模型生成回答。这样可以减少幻觉，并让回答具备可追溯来源。
+const isStreaming = ref(false)
+const thinkingMessageId = ref('')
+const qaSocket = ref<WebSocket | null>(null)
+const socketReadyTask = ref<Promise<WebSocket> | null>(null)
+let activeAssistantMessageId = ''
 
-## 核心流程
+// 响应式的消息列表，用于存储当前对话的所有历史记录。
+// 计算属性：遍历 messages，把里面原始的 Markdown 文本预先渲染成 HTML。
+// 这样模板里直接 v-html="message.renderedContent" 即可，当 messages 变化时自动更新。
+const renderedMessages = computed(() =>
+  messages.value.map((message) => ({
+    ...message,
+    renderedContent: renderMarkdown(message.content, message.citations ?? []),
+  })),
+)
 
-1. 用户提出问题
-2. 系统生成 query embedding
-3. 向量数据库召回相关 chunk
-4. BM25 检索补充关键词匹配
-5. Reranker 对候选结果精排
-6. LLM 基于证据生成回答
+function resetStreamingState() {
+  isStreaming.value = false
+  thinkingMessageId.value = ''
+  activeAssistantMessageId = ''
+}
 
-## 检索模块对比
+function handleExternalSessionSwitch() {
+  resetStreamingState()
+  closeQaSocket()
+}
 
-| 模块 | 作用 | 适合场景 |
-|---|---|---|
-| Qdrant | 语义检索 | 中文问题检索英文论文 |
-| Elasticsearch | 关键词检索 | 模型名、数据集、指标、公式 |
-| Reranker | 精排证据 | 过滤弱相关 chunk |
+window.addEventListener('scholarease:qa-session-switched', handleExternalSessionSwitch)
 
-## 示例结论
+/**
+ * 确保当前有一个可用的会话 ID (sessionId)。
+ * 如果已经存在（从 localStorage 中读取的），则直接返回；
+ * 否则在前端生成一个新的会话 ID，并持久化到本地。
+ */
+function ensureSession() {
+  return chatSessions.ensureSessionId()
+}
 
-> Hybrid retrieval 通常比单独使用向量检索更稳定，因为它同时保留语义召回和精确关键词匹配能力。
+/**
+ * 发送用户消息并处理流式回复的核心逻辑。
+ */
+async function sendMessage() {
+  const text = inputMessage.value.trim()
+  // 防抖：空内容或正在输出流式消息时不允许发送新消息
+  if (!text || isStreaming.value) {
+    return
+  }
 
-可以用如下参数作为 MVP 默认值：
+  // 1. 将用户的提问加入到消息列表中
+  chatSessions.addMessage({
+    id: crypto.randomUUID(),
+    role: 'user',
+    content: text,
+  })
+  chatSessions.ensureTitleFromQuestion(text)
+  // 2. 预先创建一个空的助手回复对象，用于后续接收流式生成的字符
+  const assistantMessage: ChatMessage = {
+    id: crypto.randomUUID(),
+    role: 'assistant',
+    content: '',
+  }
+  chatSessions.addMessage(assistantMessage)
+  
+  // 3. 清空输入框并设置状态为正在流式输出
+  inputMessage.value = ''
+  isStreaming.value = true
+  thinkingMessageId.value = assistantMessage.id
+  activeAssistantMessageId = assistantMessage.id
 
-行内公式示例：混合检索得分可以写作 $score = \\alpha dense + (1 - \\alpha) bm25$。
+  try {
+    // 4. 复用当前会话的 WebSocket 发送问题，后端会持续推送本轮 token。
+    const socket = await ensureQaSocket()
+    socket.send(
+      JSON.stringify({
+        sessionId: ensureSession(),
+        message: text,
+      }),
+    )
+  } catch (error) {
+    // 发生异常时，把错误信息也拼接到回复气泡里展示给用户
+    appendAssistantContent(
+      assistantMessage.id,
+      `\n\n${error instanceof Error ? error.message : 'WebSocket 问答失败'}`,
+    )
+    resetStreamingState()
+  } finally {
+    // 正常流式结束由 WebSocket completion 事件负责；这里仅兜底处理同步失败。
+  }
+}
 
-成段公式示例：
+function appendAssistantContent(messageId: string, content: string) {
+  if (!content) {
+    return
+  }
+  chatSessions.appendMessageContent(messageId, content)
+}
 
-$$
-Q_{\\%} = a + b(\\Delta P) + \\frac{Y}{1 + \\exp((T - T_{\\text{half}}) / S)}
-$$
+function setAssistantCitations(messageId: string, citations: QaCitation[]) {
+  chatSessions.setMessageCitations(messageId, citations)
+}
 
-\`\`\`text
-dense_top_k = 40
-bm25_top_k = 40
-merged_top_k = 60
-rerank_top_k = 10
-final_context = 4-8 chunks
-\`\`\`
-`
+function qaWebSocketUrl() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/api/qa/ws`
+}
 
-const renderedExampleMarkdown = computed(() => renderMarkdown(exampleMarkdown)) // 把 Markdown 转 HTML；computed 会缓存结果，依赖变化时才重新计算。
+function ensureQaSocket() {
+  const existing = qaSocket.value
+  if (existing?.readyState === WebSocket.OPEN) {
+    return Promise.resolve(existing)
+  }
+  if (socketReadyTask.value) {
+    return socketReadyTask.value
+  }
+
+  socketReadyTask.value = new Promise<WebSocket>((resolve, reject) => {
+    const socket = new WebSocket(qaWebSocketUrl())
+    qaSocket.value = socket
+
+    socket.onopen = () => {
+      socketReadyTask.value = null
+      resolve(socket)
+    }
+
+    socket.onmessage = handleQaSocketMessage
+
+    socket.onerror = () => {
+      const wasConnecting = socket.readyState === WebSocket.CONNECTING
+      reject(new Error('WebSocket 连接失败'))
+      if (!wasConnecting && activeAssistantMessageId) {
+        appendAssistantContent(activeAssistantMessageId, '\n\nWebSocket 连接失败')
+      }
+      isStreaming.value = false
+      thinkingMessageId.value = ''
+      activeAssistantMessageId = ''
+      closeQaSocket()
+    }
+
+    socket.onclose = () => {
+      if (qaSocket.value === socket) {
+        qaSocket.value = null
+      }
+      socketReadyTask.value = null
+      if (isStreaming.value && activeAssistantMessageId) {
+        appendAssistantContent(activeAssistantMessageId, '\n\nWebSocket 连接已关闭')
+      }
+      isStreaming.value = false
+      thinkingMessageId.value = ''
+      activeAssistantMessageId = ''
+    }
+  })
+
+  return socketReadyTask.value
+}
+
+function handleQaSocketMessage(event: MessageEvent) {
+  let payload: QaWebSocketResponse
+  try {
+    payload = JSON.parse(event.data)
+  } catch {
+    handleQaSocketError('WebSocket 响应解析失败')
+    return
+  }
+
+  if (payload.type === 'token') {
+    thinkingMessageId.value = ''
+    appendAssistantContent(activeAssistantMessageId, payload.content ?? '')
+  } else if (payload.type === 'metadata') {
+    setAssistantCitations(activeAssistantMessageId, payload.data?.citations ?? [])
+  } else if (payload.type === 'error') {
+    handleQaSocketError(payload.error ?? 'WebSocket 问答失败')
+  } else if (payload.type === 'completion') {
+    resetStreamingState()
+  }
+}
+
+function handleQaSocketError(message: string) {
+  if (activeAssistantMessageId) {
+    appendAssistantContent(activeAssistantMessageId, `\n\n${message}`)
+  }
+  resetStreamingState()
+  closeQaSocket()
+}
+
+function closeQaSocket() {
+  const socket = qaSocket.value
+  qaSocket.value = null
+  socketReadyTask.value = null
+  if (socket && socket.readyState !== WebSocket.CLOSED && socket.readyState !== WebSocket.CLOSING) {
+    socket.close()
+  }
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scholarease:qa-session-switched', handleExternalSessionSwitch)
+  closeQaSocket()
+})
 
 function escapeHtml(value: string) { // 定义 HTML 转义函数，参数 value 是即将被插入 HTML 的原始文本。
   return value // 返回连续替换后的安全字符串；这里使用链式调用逐个处理特殊字符。
@@ -66,11 +234,39 @@ function escapeHtml(value: string) { // 定义 HTML 转义函数，参数 value 
     .replace(/'/g, '&#39;') // 转义单引号，补齐另一种常见属性边界字符的安全处理。
 } // HTML 转义函数结束。
 
-function renderInline(value: string) { // 定义行内 Markdown 渲染函数，用于处理段落、标题、表格单元格等短文本。
+function citationName(citation: QaCitation) {
+  return citation.title?.trim() || citation.paperMd5 || citation.citationId
+}
+
+function citationTitle(citation: QaCitation) {
+  const page = citation.pageStart
+    ? `第 ${citation.pageStart}${citation.pageEnd ? `-${citation.pageEnd}` : ''} 页`
+    : ''
+  return [citation.citationId, citation.title, citation.sectionPath, page].filter(Boolean).join(' · ')
+}
+
+function renderCitationRefs(value: string, citations: QaCitation[], protectSegment: (segment: string) => string) {
+  if (!citations.length) {
+    return value
+  }
+  const citationMap = new Map(citations.map((citation) => [citation.citationId.toUpperCase(), citation]))
+  return value.replace(/\[(S\d+)]/gi, (raw, citationId: string) => {
+    const citation = citationMap.get(citationId.toUpperCase())
+    if (!citation) {
+      return raw
+    }
+    return protectSegment(
+      `<span class="citation-ref" title="${escapeHtml(citationTitle(citation))}">${escapeHtml(citationName(citation))}</span>`,
+    )
+  })
+}
+
+function renderInline(value: string, citations: QaCitation[] = []) { // 定义行内 Markdown 渲染函数，用于处理段落、标题、表格单元格等短文本。
   const protectedSegments: string[] = [] // 存放已经渲染好的行内代码和行内公式，避免后续粗体/斜体正则误改它们。
   const protectSegment = (segment: string) => `@@SEGMENT_${protectedSegments.push(segment) - 1}@@` // 把 HTML 片段存入数组，并返回一个临时占位符。
   const safeValue = escapeHtml(value) // 先对原始文本做 HTML 转义，再把 Markdown 标记替换成允许的 HTML 标签。
-  const withCode = safeValue.replace(/`([^`]+)`/g, (_, code: string) => protectSegment(`<code>${code}</code>`)) // 把 `代码` 转为受保护的 <code> 片段。
+  const withCitations = renderCitationRefs(safeValue, citations, protectSegment)
+  const withCode = withCitations.replace(/`([^`]+)`/g, (_, code: string) => protectSegment(`<code>${code}</code>`)) // 把 `代码` 转为受保护的 <code> 片段。
   const withMath = withCode.replace(/\$(?!\$)([^$\n]+?)\$(?!\$)/g, (_, formula: string) => protectSegment(renderLatex(formula, false))) // 把 $公式$ 交给 KaTeX 渲染，并保护生成的 HTML。
   const withTextStyle = withMath
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') // 把 **粗体** 转为 <strong>粗体</strong>。
@@ -105,7 +301,7 @@ function getLine(lines: string[], index: number) { // 定义安全取行函数�
   return lines[index] ?? '' // 如果 index 越界或该位置不存在，就返回空字符串，避免严格模式下 undefined 报错。
 } // 安全取行函数结束。
 
-function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器，参数 markdown 是待展示的原始 Markdown 文本。
+function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定义轻量 Markdown 渲染器，参数 markdown 是待展示的原始 Markdown 文本。
   const lines = markdown.trim().split(/\r?\n/) // 去掉首尾空白后按换行切分，兼容 Windows 的 \r\n 和 Unix 的 \n。
   const html: string[] = [] // 用数组收集生成的 HTML 片段，最后再 join，避免频繁字符串拼接。
   let index = 0 // 当前解析到的行号；解析器会根据不同语法块主动推进它。
@@ -177,7 +373,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
     if (/^#{1,6}\s/.test(trimmed)) { // 如果当前行符合 “1 到 6 个 # 后跟空格”，说明它是 Markdown 标题。
       const level = trimmed.match(/^#{1,6}/)?.[0].length ?? 2 // 统计 # 的数量，决定生成 h1 到 h6；兜底使用 h2。
       const text = trimmed.replace(/^#{1,6}\s+/, '') // 去掉开头的 # 和空格，只保留标题正文。
-      html.push(`<h${level}>${renderInline(text)}</h${level}>`) // 把标题正文做行内渲染后包进对应级别的 h 标签。
+      html.push(`<h${level}>${renderInline(text, citations)}</h${level}>`) // 把标题正文做行内渲染后包进对应级别的 h 标签。
       index += 1 // 标题只占一行，处理完后推进到下一行。
       continue // 标题已经处理完，进入下一轮主循环。
     } // 标题处理分支结束。
@@ -190,7 +386,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
         index += 1 // 处理完当前引用行后继续看下一行是否也是引用。
       } // 引用块收集循环结束。
 
-      html.push(`<blockquote>${quoteLines.map(renderInline).join('<br>')}</blockquote>`) // 把每行引用内容做行内渲染，并用 <br> 保留多行引用的换行。
+      html.push(`<blockquote>${quoteLines.map((line) => renderInline(line, citations)).join('<br>')}</blockquote>`) // 把每行引用内容做行内渲染，并用 <br> 保留多行引用的换行。
       continue // 引用块已经处理完，进入下一轮主循环。
     } // 引用块处理分支结束。
 
@@ -210,11 +406,11 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
 
       html.push( // 开始拼接完整表格 HTML，并加入 html 片段数组。
         `<div class="markdown-table-wrap"><table><thead><tr>${headers // 外层 div 用于提供边框和横向滚动；table/thead/tr 是标准表格结构。
-          .map((cell) => `<th>${renderInline(cell)}</th>`) // 每个表头单元格渲染为 th，并允许单元格内部使用行内 Markdown。
+          .map((cell) => `<th>${renderInline(cell, citations)}</th>`) // 每个表头单元格渲染为 th，并允许单元格内部使用行内 Markdown。
           .join('')}</tr></thead><tbody>${rows // 所有 th 拼好后关闭表头，再开始拼接 tbody。
           .map( // 遍历每一行表格数据，把二维数组转成多行 tr。
             (row) => // row 表示一行数据，是若干单元格字符串组成的数组。
-              `<tr>${row.map((cell) => `<td>${renderInline(cell)}</td>`).join('')}</tr>`, // 把当前行每个单元格转为 td，再包进 tr。
+              `<tr>${row.map((cell) => `<td>${renderInline(cell, citations)}</td>`).join('')}</tr>`, // 把当前行每个单元格转为 td，再包进 tr。
           ) // 单行 tr 生成逻辑结束。
           .join('')}</tbody></table></div>`, // 把所有 tr 拼接起来，并关闭 tbody、table 和外层 div。
       ) // 表格 HTML 片段加入完成。
@@ -229,7 +425,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
         index += 1 // 处理完当前列表项后推进到下一行。
       } // 有序列表项收集循环结束。
 
-      html.push(`<ol>${items.map((item) => `<li>${renderInline(item)}</li>`).join('')}</ol>`) // 把每个列表项渲染为 li，再包进 ol。
+      html.push(`<ol>${items.map((item) => `<li>${renderInline(item, citations)}</li>`).join('')}</ol>`) // 把每个列表项渲染为 li，再包进 ol。
       continue // 有序列表已经处理完，进入下一轮主循环。
     } // 有序列表处理分支结束。
 
@@ -241,7 +437,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
         index += 1 // 处理完当前列表项后推进到下一行。
       } // 无序列表项收集循环结束。
 
-      html.push(`<ul>${items.map((item) => `<li>${renderInline(item)}</li>`).join('')}</ul>`) // 把每个列表项渲染为 li，再包进 ul。
+      html.push(`<ul>${items.map((item) => `<li>${renderInline(item, citations)}</li>`).join('')}</ul>`) // 把每个列表项渲染为 li，再包进 ul。
       continue // 无序列表已经处理完，进入下一轮主循环。
     } // 无序列表处理分支结束。
 
@@ -266,7 +462,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
       index += 1 // 处理完当前普通文本行后推进到下一行。
     } // 普通段落收集循环结束。
 
-    html.push(`<p>${renderInline(paragraphLines.join(' '))}</p>`) // 把连续普通文本用空格合并为一个段落，并做行内 Markdown 渲染。
+    html.push(`<p>${renderInline(paragraphLines.join(' '), citations)}</p>`) // 把连续普通文本用空格合并为一个段落，并做行内 Markdown 渲染。
   } // 主解析循环结束，说明所有 Markdown 行都已经处理完。
 
   return html.join('') // 把所有 HTML 片段拼成最终字符串，交给模板的 v-html 渲染。
@@ -277,6 +473,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
   <section class="chat-workspace">
     <!-- 顶部工具栏展示当前模型，并提供模型设置入口。 -->
     <div class="chat-toolbar">
+      <div class="active-session-pill">{{ activeSessionTitle }}</div>
       <div class="model-pill">
         <span>{{ modelSettings.activePreset.label }}</span>
         <strong>{{ modelSettings.modelName }}</strong>
@@ -293,17 +490,29 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
 
     <div class="conversation-shell">
       <div class="messages-container">
-        <!--
-          这里模拟一条 assistant 消息。
-          v-html 接收 renderMarkdown 生成的 HTML，让 Markdown 不再以纯文本形式显示。
-        -->
-        <article class="message-row is-assistant">
-          <div class="message-bubble markdown-body" v-html="renderedExampleMarkdown"></div>
+        <article
+          v-for="message in renderedMessages"
+          :key="message.id"
+          class="message-row"
+          :class="message.role === 'user' ? 'is-user' : 'is-assistant'"
+        >
+          <div class="message-bubble markdown-body">
+            <div
+              v-if="message.id === thinkingMessageId && !message.content"
+              class="thinking-indicator"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+              <em>Thinking</em>
+            </div>
+            <div v-else v-html="message.renderedContent"></div>
+          </div>
         </article>
       </div>
     </div>
 
-    <!-- 底部输入区固定在页面底部，后续可接入发送事件和消息数组更新。 -->
+    <!-- 底部输入区固定在页面底部。 -->
     <div class="composer-wrap">
       <div class="composer">
         <el-input
@@ -313,14 +522,16 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
           placeholder="给 ScholarEase 发送消息"
           resize="none"
           type="textarea"
+          @keydown.enter.exact.prevent="sendMessage"
         />
 
         <div class="composer-actions">
           <el-button
             class="send-button"
-            :disabled="!inputMessage.trim()"
+            :disabled="!inputMessage.trim() || isStreaming"
             :icon="Promotion"
             circle
+            @click="sendMessage"
           />
         </div>
       </div>
@@ -349,7 +560,17 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
   right: 24px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+}
+
+.active-session-pill {
+  overflow: hidden;
+  max-width: 280px;
+  color: #6f675b;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 当前模型展示胶囊：左侧是供应商/预设，右侧是实际模型名。 */
@@ -417,26 +638,87 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
 }
 
 .message-bubble {
-  max-width: min(760px, 76%);
-  padding: 14px 20px;
-  border-radius: 22px;
+  max-width: min(760px, 78%);
+  padding: 12px 16px;
+  border-radius: 18px;
   line-height: 1.7;
 }
 
 .message-row.is-user .message-bubble {
-  border-radius: 999px;
+  max-width: min(680px, 72%);
+  border-radius: 18px 18px 6px 18px;
   background: #26392f;
   color: #fffdf7;
+  font-size: 16px;
+  line-height: 1.65;
 }
 
 .message-row.is-assistant .message-bubble {
+  max-width: min(820px, 82%);
   background: transparent;
   color: #1d2a23;
+  font-size: 16px;
 }
 
 /* Markdown 内容的基础字号，具体元素样式在下面按标签细分。 */
 .markdown-body {
+  font-size: 16px;
+}
+
+.message-row.is-user .markdown-body :deep(p),
+.message-row.is-user .markdown-body :deep(ol),
+.message-row.is-user .markdown-body :deep(ul) {
+  margin: 0;
+}
+
+.message-row.is-user .markdown-body :deep(code) {
+  background: rgba(255, 253, 247, 0.16);
+  color: #fffdf7;
+}
+
+.thinking-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  color: #6f675b;
+}
+
+.thinking-indicator span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8fa08f;
+  animation: thinking-bounce 1.15s ease-in-out infinite;
+}
+
+.thinking-indicator span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.thinking-indicator span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.thinking-indicator em {
+  margin-left: 4px;
+  color: #6f675b;
   font-size: 15px;
+  font-style: normal;
+}
+
+@keyframes thinking-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.42;
+  }
+
+  40% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
 }
 
 /* Markdown 标题样式：保持层级明显，同时不做过大的英雄式标题。 */
@@ -558,6 +840,23 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
   font-size: 0.92em;
 }
 
+.markdown-body :deep(.citation-ref) {
+  display: inline-block;
+  max-width: 360px;
+  margin: 0 2px;
+  padding: 1px 7px;
+  overflow: hidden;
+  border: 1px solid #d9c894;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #2c4738;
+  font-size: 0.9em;
+  line-height: 1.55;
+  text-overflow: ellipsis;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
 .markdown-body :deep(pre) {
   margin: 1em 0 0;
   overflow-x: auto;
@@ -642,6 +941,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
 /* 移动端收窄边距和消息气泡宽度，保持主要内容可读。 */
 @media (max-width: 860px) {
   .chat-toolbar {
+    top: 18px;
     right: 16px;
     left: 16px;
     justify-content: flex-end;
@@ -652,7 +952,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
   }
 
   .conversation-shell {
-    padding: 76px 18px 220px;
+    padding: 78px 18px 220px;
   }
 
   .message-bubble {
@@ -661,6 +961,7 @@ function renderMarkdown(markdown: string) { // 定义轻量 Markdown 渲染器�
   }
 
   .composer-wrap {
+    left: 0;
     padding: 18px;
   }
 

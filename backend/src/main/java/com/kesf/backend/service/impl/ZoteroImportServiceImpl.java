@@ -3,11 +3,13 @@ package com.kesf.backend.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.kesf.backend.config.ZoteroProperties;
 import com.kesf.backend.exception.BusinessException;
 import com.kesf.backend.exception.ErrorCode;
 import com.kesf.backend.service.ZoteroImportService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -29,6 +31,7 @@ import java.util.regex.Pattern;
  * 负责将 PDF 文档发送到本地或远程的 Zotero 服务进行保存与解析
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ZoteroImportServiceImpl implements ZoteroImportService {
 
@@ -81,7 +84,7 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
         HttpRequest request = HttpRequest.newBuilder(apiUri(SAVE_STANDALONE_ATTACHMENT_PATH))
                 .timeout(properties.getRequestTimeout()) // 设置超时时间
                 .header("Content-Type", "application/pdf") // 声明内容类型为 PDF
-                .header("X-Metadata", writeJson(metadata)) // 将元数据转为 JSON 字符串
+                .header("X-Metadata", writeHeaderJson(metadata)) // Header 只能安全携带 ASCII，中文会被转义为 JSON unicode
                 .POST(HttpRequest.BodyPublishers.ofByteArray(pdfBytes)) // 放入 PDF 字节数据
                 .build();
 
@@ -93,15 +96,16 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
             throw zoteroFailed("Zotero import failed with HTTP " + response.statusCode());
         }
 
-        // 解析返回体以判断 Zotero 是否成功识别了该论文，并封装为结果返回
+        // 解析返回体以判断 Zotero 是否成功识别了该论文。识别失败不阻断后续 MinerU 流程，
+        // 后面会尝试读取附件记录，仍不可用时回退到文件名元数据。
         boolean canRecognize = readCanRecognize(response.body());
         if (!canRecognize) {
-            throw zoteroFailed("Zotero could not recognize PDF metadata");
+            log.warn("Zotero connector reported canRecognize=false, fallback metadata will be used: sourceUrl={}", sourceUrl);
         }
-        RecognizedResult recognized = waitForRecognizedMetadata(sourceUrl, previousLibraryVersion);
-        String collectionName = lookupFirstCollectionName(recognized.parentItemKey());
-        return new ZoteroImportResult(sessionId, true, recognized.metadata(),
-                recognized.parentItemKey(), collectionName);
+        RecognizedResult recognized = waitForRecognizedMetadata(sourceUrl, previousLibraryVersion, safeFileName);
+        String collectionName = lookupFirstCollectionName(recognized.itemKey());
+        return new ZoteroImportResult(sessionId, recognized.canRecognize(), recognized.metadata(),
+                recognized.itemKey(), collectionName);
     }
 
     /**
@@ -186,21 +190,40 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
      * @param previousLibraryVersion 导入 PDF 前的库版本号，缩小检索范围
      * @return 提取并封装好的论文元数据
      */
-    private RecognizedResult waitForRecognizedMetadata(String sourceUrl, long previousLibraryVersion) {
+    private RecognizedResult waitForRecognizedMetadata(
+            String sourceUrl,
+            long previousLibraryVersion,
+            String safeFileName
+    ) {
         int maxAttempts = Math.max(1, properties.getMetadataMaxAttempts());
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             // 尝试查找包含我们 sourceUrl 的附件，并获取其所属的父项目 (即 Zotero 为该 PDF 生成的条目)
-            String parentItemKey = findParentItemKey(sourceUrl, previousLibraryVersion);
-            if (StringUtils.hasText(parentItemKey)) {
+            ImportedAttachment importedAttachment = findImportedAttachment(sourceUrl, previousLibraryVersion);
+            if (importedAttachment != null && StringUtils.hasText(importedAttachment.parentItemKey())) {
                 // 如果找到了父项目，说明识别完成，直接读取其元数据
-                return new RecognizedResult(readParentMetadata(parentItemKey), parentItemKey);
+                return new RecognizedResult(true, readParentMetadata(importedAttachment.parentItemKey()),
+                        importedAttachment.parentItemKey());
+            }
+            if (importedAttachment != null && StringUtils.hasText(importedAttachment.attachmentItemKey())) {
+                log.warn(
+                        "Zotero imported PDF as standalone attachment, fallback to attachment metadata: sourceUrl={}, attachmentItemKey={}",
+                        sourceUrl,
+                        importedAttachment.attachmentItemKey()
+                );
+                return new RecognizedResult(false, fallbackAttachmentMetadata(importedAttachment.data(), safeFileName),
+                        importedAttachment.attachmentItemKey());
             }
             // 如果还没找到，并且未达到最大重试次数，则休眠等待后继续下一轮轮询
             if (attempt < maxAttempts) {
                 sleepBeforeNextMetadataPoll();
             }
         }
-        throw zoteroFailed("Zotero metadata was not available after PDF import");
+        log.warn(
+                "Zotero metadata was not available after PDF import, fallback to filename metadata: sourceUrl={}, fileName={}",
+                sourceUrl,
+                safeFileName
+        );
+        return new RecognizedResult(false, fallbackFileNameMetadata(safeFileName), null);
     }
 
     /**
@@ -210,7 +233,7 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
      * @param previousLibraryVersion 开始导入操作前的库版本
      * @return 父条目的唯一 Key，如果未找到或尚未生成则返回 null
      */
-    private String findParentItemKey(String sourceUrl, long previousLibraryVersion) {
+    private ImportedAttachment findImportedAttachment(String sourceUrl, long previousLibraryVersion) {
         HttpRequest request = HttpRequest.newBuilder(apiUri(LOCAL_ITEMS_PATH
                         + "?since=" + previousLibraryVersion
                         + "&limit=100&format=json"))
@@ -233,16 +256,44 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
                 // 如果该条目是一个附件，且其 url 字段与我们赋予的 sourceUrl 匹配
                 if ("attachment".equals(data.path("itemType").asText())
                         && sourceUrl.equals(data.path("url").asText())) {
+                    String attachmentItemKey = data.path("key").asText(null);
                     String parentItem = data.path("parentItem").asText(null);
-                    if (StringUtils.hasText(parentItem)) {
-                        return parentItem;
-                    }
+                    return new ImportedAttachment(attachmentItemKey, parentItem, data);
                 }
             }
             return null;
         } catch (JsonProcessingException exception) {
             throw zoteroFailed("Zotero local API returned invalid item JSON");
         }
+    }
+
+    private ZoteroPaperMetadata fallbackAttachmentMetadata(JsonNode attachmentData, String safeFileName) {
+        String title = textOrNull(attachmentData, "title");
+        if (!StringUtils.hasText(title) || "PDF".equalsIgnoreCase(title)) {
+            title = titleFromFileName(safeFileName);
+        }
+        return new ZoteroPaperMetadata(
+                title,
+                List.of(),
+                tags(attachmentData.path("tags")),
+                defaultLanguageForTitle(textOrNull(attachmentData, "language"), title),
+                null,
+                null,
+                null
+        );
+    }
+
+    private ZoteroPaperMetadata fallbackFileNameMetadata(String safeFileName) {
+        String title = titleFromFileName(safeFileName);
+        return new ZoteroPaperMetadata(
+                title,
+                List.of(),
+                List.of(),
+                defaultLanguageForTitle(null, title),
+                null,
+                null,
+                null
+        );
     }
 
     /**
@@ -374,6 +425,23 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
         return StringUtils.hasText(language) ? language : "en";
     }
 
+    private String defaultLanguageForTitle(String language, String title) {
+        if (StringUtils.hasText(language)) {
+            return language;
+        }
+        return containsCjk(title) ? "zh" : "en";
+    }
+
+    private boolean containsCjk(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        return value.codePoints().anyMatch(codePoint ->
+                (codePoint >= 0x4E00 && codePoint <= 0x9FFF)
+                        || (codePoint >= 0x3400 && codePoint <= 0x4DBF)
+                        || (codePoint >= 0x20000 && codePoint <= 0x2A6DF));
+    }
+
     /**
      * 安全将字符串转为 long，用于解析 HTTP Header 中的版本号。若解析失败则回退至 0。
      */
@@ -442,6 +510,16 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
     private String writeJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException exception) {
+            throw zoteroFailed("Failed to build Zotero metadata");
+        }
+    }
+
+    private String writeHeaderJson(Object value) {
+        try {
+            return objectMapper.writer()
+                    .with(JsonGenerator.Feature.ESCAPE_NON_ASCII)
+                    .writeValueAsString(value);
         } catch (JsonProcessingException exception) {
             throw zoteroFailed("Failed to build Zotero metadata");
         }
@@ -584,7 +662,10 @@ public class ZoteroImportServiceImpl implements ZoteroImportService {
         }
     }
 
-    private record RecognizedResult(ZoteroPaperMetadata metadata, String parentItemKey) {
+    private record ImportedAttachment(String attachmentItemKey, String parentItemKey, JsonNode data) {
+    }
+
+    private record RecognizedResult(boolean canRecognize, ZoteroPaperMetadata metadata, String itemKey) {
     }
 
     private BusinessException zoteroFailed(String message) {

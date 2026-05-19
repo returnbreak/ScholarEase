@@ -1,20 +1,47 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import {
+  ArrowDown,
+  ArrowRight,
   ChatDotRound,
   Collection,
   Delete,
   Expand,
   Fold,
   FolderOpened,
+  Plus,
   Star,
 } from '@element-plus/icons-vue'
+import { useChatSessionsStore } from '@/stores/chatSessions'
 
 const route = useRoute()
+const router = useRouter()
+const chatSessions = useChatSessionsStore()
+const { currentSessionId, sessions } = storeToRefs(chatSessions)
 const collapsed = ref(false)
+const historyExpanded = ref(true)
 
 const sidebarWidth = computed(() => (collapsed.value ? '72px' : '268px'))
+
+function notifySessionSwitch() {
+  window.dispatchEvent(new CustomEvent('scholarease:qa-session-switched'))
+}
+
+function createChatSession() {
+  chatSessions.createSession()
+  notifySessionSwitch()
+  router.push({ name: 'chat' })
+}
+
+function switchChatSession(sessionId: string) {
+  if (sessionId !== currentSessionId.value) {
+    chatSessions.switchSession(sessionId)
+    notifySessionSwitch()
+  }
+  router.push({ name: 'chat' })
+}
 </script>
 
 <template>
@@ -46,6 +73,44 @@ const sidebarWidth = computed(() => (collapsed.value ? '72px' : '268px'))
           <el-icon><ChatDotRound /></el-icon>
           <span v-show="!collapsed">问答工作台</span>
         </RouterLink>
+
+        <div v-show="!collapsed" class="chat-history">
+          <div class="chat-history-header">
+            <button
+              class="history-toggle"
+              type="button"
+              @click="historyExpanded = !historyExpanded"
+            >
+              <el-icon>
+                <ArrowDown v-if="historyExpanded" />
+                <ArrowRight v-else />
+              </el-icon>
+              <span>对话历史</span>
+            </button>
+            <el-tooltip content="新建对话" placement="right">
+              <el-button
+                class="history-new-button"
+                :icon="Plus"
+                circle
+                text
+                @click="createChatSession"
+              />
+            </el-tooltip>
+          </div>
+
+          <div v-show="historyExpanded" class="history-list">
+            <button
+              v-for="session in sessions"
+              :key="session.id"
+              class="history-item"
+              :class="{ active: session.id === currentSessionId }"
+              type="button"
+              @click="switchChatSession(session.id)"
+            >
+              <span>{{ session.title }}</span>
+            </button>
+          </div>
+        </div>
       </section>
 
       <section class="nav-section library-section">
@@ -186,6 +251,91 @@ const sidebarWidth = computed(() => (collapsed.value ? '72px' : '268px'))
 .nav-item .el-icon {
   flex: 0 0 auto;
   font-size: 18px;
+}
+
+.chat-history {
+  margin-top: 10px;
+  padding: 8px 0 0;
+}
+
+.chat-history-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-toggle {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b6254;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.history-toggle:hover,
+.history-new-button:hover {
+  background: #ece4d7;
+}
+
+.history-toggle .el-icon {
+  flex: 0 0 auto;
+  font-size: 14px;
+}
+
+.history-new-button {
+  width: 30px;
+  height: 30px;
+  color: #2c4738;
+}
+
+.history-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.history-item {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px 6px 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #514b43;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+.history-item span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item:hover {
+  background: #ece4d7;
+  color: #26392f;
+}
+
+.history-item.active {
+  background: rgba(38, 57, 47, 0.12);
+  color: #26392f;
+  font-weight: 700;
 }
 
 .nav-subitem {

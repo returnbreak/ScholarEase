@@ -65,6 +65,73 @@ class ZoteroImportServiceImplTests {
     }
 
     @Test
+    void importParsedPaperEscapesNonAsciiMetadataForHttpHeader() throws IOException {
+        byte[] pdfBytes = "%PDF-1.7\nScholarEase\n%%EOF".getBytes(StandardCharsets.UTF_8);
+        ZoteroServerState state = new ZoteroServerState();
+        server = startServer(state);
+
+        ZoteroImportServiceImpl service = new ZoteroImportServiceImpl(properties(server), new ObjectMapper());
+
+        service.importParsedPaper(
+                pdfBytes,
+                "层析SAR三维成像方法与森林参数反演研究进展_万杰.pdf",
+                "trace-001"
+        );
+
+        String metadata = state.savedAttachment.get().metadata();
+        assertThat(metadata).contains("\\u5C42\\u6790SAR");
+        assertThat(metadata).doesNotContain("层析SAR");
+        assertThat(metadata).contains("\"url\":\"scholarease://documents/trace-001\"");
+    }
+
+    @Test
+    void importParsedPaperFallsBackWhenZoteroCreatesStandaloneAttachment() throws IOException {
+        byte[] pdfBytes = "%PDF-1.7\nScholarEase\n%%EOF".getBytes(StandardCharsets.UTF_8);
+        ZoteroServerState state = new ZoteroServerState();
+        state.standaloneAttachment = true;
+        state.attachmentTitle = "层析SAR三维成像方法与森林参数反演研究进展_万杰";
+        server = startServer(state);
+
+        ZoteroImportServiceImpl service = new ZoteroImportServiceImpl(properties(server), new ObjectMapper());
+
+        ZoteroImportService.ZoteroImportResult result = service.importParsedPaper(
+                pdfBytes,
+                "层析SAR三维成像方法与森林参数反演研究进展_万杰.pdf",
+                "trace-001"
+        );
+
+        assertThat(result.canRecognize()).isFalse();
+        assertThat(result.parentItemKey()).isEqualTo("ATTACH1");
+        assertThat(result.metadata().title()).isEqualTo("层析SAR三维成像方法与森林参数反演研究进展_万杰");
+        assertThat(result.metadata().language()).isEqualTo("zh");
+        assertThat(result.metadata().authors()).isEmpty();
+    }
+
+    @Test
+    void importParsedPaperFallsBackToFileNameWhenZoteroMetadataIsUnavailable() throws IOException {
+        byte[] pdfBytes = "%PDF-1.7\nScholarEase\n%%EOF".getBytes(StandardCharsets.UTF_8);
+        ZoteroServerState state = new ZoteroServerState();
+        state.canRecognize = false;
+        state.hideImportedAttachment = true;
+        server = startServer(state);
+
+        ZoteroImportServiceImpl service = new ZoteroImportServiceImpl(properties(server), new ObjectMapper());
+
+        ZoteroImportService.ZoteroImportResult result = service.importParsedPaper(
+                pdfBytes,
+                "层析SAR三维成像方法与森林参数反演研究进展_万杰.pdf",
+                "trace-001"
+        );
+
+        assertThat(result.canRecognize()).isFalse();
+        assertThat(result.parentItemKey()).isNull();
+        assertThat(result.collectionName()).isNull();
+        assertThat(result.metadata().title()).isEqualTo("层析SAR三维成像方法与森林参数反演研究进展_万杰");
+        assertThat(result.metadata().language()).isEqualTo("zh");
+        assertThat(result.metadata().authors()).isEmpty();
+    }
+
+    @Test
     void importParsedPaperFailsWhenZoteroConnectorDoesNotCreateAttachment() throws IOException {
         ZoteroServerState state = new ZoteroServerState();
         state.saveAttachmentStatusCode = 500;
@@ -89,11 +156,31 @@ class ZoteroImportServiceImplTests {
             exchange.getResponseHeaders().add("Last-Modified-Version", "10");
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             if (query != null && query.contains("since=10")) {
-                response = """
+                if (state.hideImportedAttachment) {
+                    response = "[]".getBytes(StandardCharsets.UTF_8);
+                } else if (state.standaloneAttachment) {
+                    response = ("""
+                            [
+                              {
+                                "key": "ATTACH1",
+                                "data": {
+                                  "key": "ATTACH1",
+                                  "itemType": "attachment",
+                                  "title": "%s",
+                                  "url": "scholarease://documents/trace-001",
+                                  "contentType": "application/pdf",
+                                  "tags": []
+                                }
+                              }
+                            ]
+                            """).formatted(state.attachmentTitle).getBytes(StandardCharsets.UTF_8);
+                } else {
+                    response = """
                         [
                           {
                             "key": "ATTACH1",
                             "data": {
+                              "key": "ATTACH1",
                               "itemType": "attachment",
                               "url": "scholarease://documents/trace-001",
                               "parentItem": "PARENT1"
@@ -101,6 +188,7 @@ class ZoteroImportServiceImplTests {
                           }
                         ]
                         """.getBytes(StandardCharsets.UTF_8);
+                }
             } else {
                 response = "[]".getBytes(StandardCharsets.UTF_8);
             }
@@ -143,7 +231,7 @@ class ZoteroImportServiceImplTests {
                     firstHeader(exchange.getRequestHeaders().get("X-Metadata")),
                     body
             ));
-            byte[] response = "{\"canRecognize\":true}".getBytes(StandardCharsets.UTF_8);
+            byte[] response = ("{\"canRecognize\":" + state.canRecognize + "}").getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(state.saveAttachmentStatusCode, response.length);
             exchange.getResponseBody().write(response);
             exchange.close();
@@ -177,6 +265,10 @@ class ZoteroImportServiceImplTests {
     private static class ZoteroServerState {
 
         private int saveAttachmentStatusCode = 201;
+        private boolean canRecognize = true;
+        private boolean standaloneAttachment;
+        private boolean hideImportedAttachment;
+        private String attachmentTitle = "PDF";
         private final AtomicReference<CapturedRequest> savedAttachment = new AtomicReference<>();
     }
 }

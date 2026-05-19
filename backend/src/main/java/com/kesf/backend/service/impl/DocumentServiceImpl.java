@@ -317,9 +317,22 @@ public class DocumentServiceImpl implements DocumentService {
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
             throw exception;
         } catch (RuntimeException exception) {
-            // 非预期运行时异常：统一包装为 MINERU_PARSE_FAILED 错误码
+            // 非预期运行时异常：统一包装为 MINERU_PARSE_FAILED 错误码，同时保留原始原因便于排查。
             progressService.updateParseStatus(uploadDocument.getTraceId(), PARSE_STATUS_FAILED_VALUE);
-            throw new BusinessException(ErrorCode.MINERU_PARSE_FAILED, ErrorCode.MINERU_PARSE_FAILED.getMessage());
+            String detail = StringUtils.hasText(exception.getMessage())
+                    ? exception.getMessage()
+                    : exception.getClass().getSimpleName();
+            log.error(
+                    "MinerU parse pipeline failed unexpectedly, traceId={}, fileName={}, reason={}",
+                    uploadDocument.getTraceId(),
+                    uploadDocument.getFileName(),
+                    detail,
+                    exception
+            );
+            throw new BusinessException(
+                    ErrorCode.MINERU_PARSE_FAILED,
+                    ErrorCode.MINERU_PARSE_FAILED.getMessage() + ": " + detail
+            );
         }
     }
 

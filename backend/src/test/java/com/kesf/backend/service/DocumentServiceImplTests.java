@@ -210,6 +210,41 @@ class DocumentServiceImplTests {
     }
 
     @Test
+    void uploadDocumentReportsUnexpectedMinerURuntimeCause() {
+        UploadDocumentDTO dto = uploadDto(PDF_MD5, (long) PDF_BYTES.length);
+        MockMultipartFile file = pdfFile();
+        when(paperMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(zoteroImportService.importParsedPaper(PDF_BYTES, "attention.pdf", "trace-001"))
+                .thenReturn(new ZoteroImportService.ZoteroImportResult(
+                        "scholarease-trace-001-session",
+                        true,
+                        new ZoteroImportService.ZoteroPaperMetadata(
+                                "The response of flow duration curves to afforestation",
+                                List.of("Patrick N.J. Lane"),
+                                List.of("hydrology"),
+                                "en",
+                                2005,
+                                "Journal of Hydrology",
+                                "10.1016/j.jhydrol.2005.01.006"
+                        ),
+                        "ITEM-KEY-001",
+                        "Test Collection"
+                ));
+        when(minerUClient.requestSignedUploadUrl("attention.pdf", "trace-001"))
+                .thenThrow(new IllegalArgumentException("bad signed upload URL"));
+
+        assertThatThrownBy(() -> documentService.uploadDocument(file, dto))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("MinerU parse failed: bad signed upload URL")
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MINERU_PARSE_FAILED);
+
+        verify(progressService).recordUploadProgress(dto);
+        verify(progressService).updateParseStatus("trace-001", 3);
+        verify(paperMapper, never()).insert(any(PaperEntity.class));
+    }
+
+    @Test
     void uploadDocumentMarksProgressFailedWhenZoteroWriteFailsBeforeMinerUParseStarts() {
         UploadDocumentDTO dto = uploadDto(PDF_MD5, (long) PDF_BYTES.length);
         MockMultipartFile file = pdfFile();
