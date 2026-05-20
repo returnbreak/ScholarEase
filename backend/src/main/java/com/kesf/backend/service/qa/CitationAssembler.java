@@ -14,17 +14,29 @@ public class CitationAssembler {
     public List<QaCitationDTO> toCitations(List<PaperRetrievalSearchService.PaperRetrievalHit> hits) {
         AtomicInteger index = new AtomicInteger(1);
         return hits.stream()
-                .map(hit -> toCitation("S" + index.getAndIncrement(), hit))
+                .map(hit -> toCitation(String.valueOf(index.getAndIncrement()), hit))
                 .toList();
     }
 
     public String toEvidencePrompt(List<QaCitationDTO> citations) {
+        if (citations == null || citations.isEmpty()) {
+            return "";
+        }
         StringBuilder builder = new StringBuilder();
+        builder.append("检索证据引用候选（这是候选编号，不是最终回答编号；最终回答必须按实际引用顺序重新连续编号）：\n");
+        for (QaCitationDTO citation : citations) {
+            builder.append(referenceText(citation)).append("\n");
+        }
+        builder.append("\n证据片段：\n\n");
         for (QaCitationDTO citation : citations) {
             builder.append("[")
                     .append(citation.getCitationId())
                     .append("]\n")
-                    .append("Paper: ")
+                    .append("Reference: ")
+                    .append(referenceText(citation))
+                    .append("\nFile: ")
+                    .append(nullToEmpty(citation.getFileName()))
+                    .append("\nTitle: ")
                     .append(nullToEmpty(citation.getTitle()))
                     .append("\nSection: ")
                     .append(nullToEmpty(citation.getSectionPath()))
@@ -52,6 +64,7 @@ public class CitationAssembler {
                 .paperMd5(document.getPaperMd5())
                 .chunkIndex(document.getChunkIndex())
                 .title(document.getTitle())
+                .fileName(document.getFileName())
                 .sectionPath(document.getSectionPath())
                 .pageStart(document.getPageStart())
                 .pageEnd(document.getPageEnd())
@@ -78,5 +91,26 @@ public class CitationAssembler {
      */
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String referenceText(QaCitationDTO citation) {
+        String fileName = nullToEmpty(citation.getFileName());
+        String title = nullToEmpty(citation.getTitle());
+        String literatureName = title.isBlank() ? fileName : title;
+        String page = pageText(citation.getPageStart(), citation.getPageEnd());
+        return "[" + citation.getCitationId() + "] "
+                + String.join(" · ", List.of(literatureName, page).stream()
+                .filter(value -> value != null && !value.isBlank())
+                .toList());
+    }
+
+    private String pageText(Integer pageStart, Integer pageEnd) {
+        if (pageStart == null) {
+            return "";
+        }
+        if (pageEnd == null || pageEnd.equals(pageStart)) {
+            return "第 " + pageStart + " 页";
+        }
+        return "第 " + pageStart + "-" + pageEnd + " 页";
     }
 }

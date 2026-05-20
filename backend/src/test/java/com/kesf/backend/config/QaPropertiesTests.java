@@ -57,6 +57,8 @@ class QaPropertiesTests {
                 entry("scholarease.qa.rerank-output-top-k", "9"),
                 entry("scholarease.qa.final-context-min-chunks", "3"),
                 entry("scholarease.qa.final-context-max-chunks", "7"),
+                entry("scholarease.qa.minimum-evidence-score", "0.025"),
+                entry("scholarease.qa.minimum-evidence-chunks", "2"),
                 entry("scholarease.qa.chat.base-url", "https://api.deepseek.com"),
                 entry("scholarease.qa.chat.api-key", "sk-test"),
                 entry("scholarease.qa.chat.model-name", "deepseek-v4-pro"),
@@ -86,6 +88,8 @@ class QaPropertiesTests {
         assertThat(properties.getRerankOutputTopK()).isEqualTo(9);
         assertThat(properties.getFinalContextMinChunks()).isEqualTo(3);
         assertThat(properties.getFinalContextMaxChunks()).isEqualTo(7);
+        assertThat(properties.getMinimumEvidenceScore()).isEqualTo(0.025d);
+        assertThat(properties.getMinimumEvidenceChunks()).isEqualTo(2);
 
         // 4. 验证聊天模型配置绑定正确
         assertThat(properties.getChat().getBaseUrl()).isEqualTo("https://api.deepseek.com");
@@ -102,5 +106,21 @@ class QaPropertiesTests {
         assertThat(properties.getPrompts().getRewritePrompt()).isEqualTo("rewrite {message}");
         assertThat(properties.getPrompts().getGroundedUserMessage()).isEqualTo("grounded {message} {evidence}");
         assertThat(properties.getPrompts().getSystemPrompt()).isEqualTo("system");
+    }
+
+    @Test
+    void answerPromptsDoNotContainNoEvidenceBranch() {
+        QaProperties properties = new QaProperties();
+
+        assertThat(properties.getPrompts().getGroundedUserMessage())
+                .doesNotContain("证据不足")
+                .doesNotContain("暂时无法回答")
+                .doesNotContain("没有检索到");
+        assertThat(properties.getPrompts().getSystemPrompt())
+                .doesNotContain("证据不足")
+                .doesNotContain("暂时无法回答")
+                .doesNotContain("没有检索到");
+        assertThat(properties.getPrompts().getNoEvidenceMessage())
+                .contains("暂时无法回答");
     }
 }

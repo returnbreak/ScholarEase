@@ -55,4 +55,9 @@ const router = createRouter({
   ],
 })
 
+router.afterEach((to) => {
+  const title = typeof to.meta.title === 'string' ? to.meta.title : ''
+  document.title = title ? `${title} - ScholarEase` : 'ScholarEase'
+})
+
 export default router

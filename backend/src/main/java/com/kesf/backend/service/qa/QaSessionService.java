@@ -147,7 +147,7 @@ public class QaSessionService {
                 .id(UUID.randomUUID().toString())
                 .role("assistant")
                 .content(assistantMessage == null ? "" : assistantMessage)
-                .citations(citations == null ? List.of() : citations)
+                .citations(List.of())
                 .build());
 
         OffsetDateTime now = OffsetDateTime.now();

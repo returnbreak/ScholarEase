@@ -15,6 +15,8 @@ public class QaCitationDTO {
 
     private String title;
 
+    private String fileName;
+
     private String sectionPath;
 
     private Integer pageStart;

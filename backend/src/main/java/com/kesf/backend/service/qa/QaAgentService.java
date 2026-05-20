@@ -51,9 +51,16 @@ public class QaAgentService {
                     retrievalSearchService.searchHybrid(rewrite.toRetrievalQuery());
             int finalLimit = Math.max(1, qaProperties.getFinalContextMaxChunks());
             List<PaperRetrievalSearchService.PaperRetrievalHit> finalHits = hits.stream()
+                    .filter(this::isReliableEvidence)
                     .limit(finalLimit)
                     .toList();
             List<QaCitationDTO> citations = citationAssembler.toCitations(finalHits);
+
+            if (citations.size() < minimumEvidenceChunks()) {
+                sendNoEvidenceResponse(request, sender, sessionId, messageId, qaTraceId);
+                return;
+            }
+
             String evidence = citationAssembler.toEvidencePrompt(citations);
 
             QaStreamMetadataDTO metadata = QaStreamMetadataDTO.builder()
@@ -109,6 +116,54 @@ public class QaAgentService {
             log.error("QA stream preparation failed, qaTraceId={}", qaTraceId, exception);
             sender.accept(QaWebSocketResponse.error(exception.getMessage()));
         }
+    }
+
+    private void sendNoEvidenceResponse(QaChatStreamRequest request,
+                                        Consumer<QaWebSocketResponse> sender,
+                                        String sessionId,
+                                        String messageId,
+                                        String qaTraceId) {
+        String noEvidenceMessage = qaProperties.getPrompts().getNoEvidenceMessage().strip();
+        sender.accept(QaWebSocketResponse.token(noEvidenceMessage));
+        QaStreamMetadataDTO metadata = QaStreamMetadataDTO.builder()
+                .sessionId(sessionId)
+                .messageId(messageId)
+                .qaTraceId(qaTraceId)
+                .citations(List.of())
+                .build();
+        sender.accept(QaWebSocketResponse.completion(metadata));
+        ChatMemory memory = chatMemoryProvider.get(sessionId);
+        memory.add(UserMessage.from(request.getMessage()));
+        memory.add(AiMessage.from(noEvidenceMessage));
+        qaSessionService.recordExchange(
+                sessionId,
+                request.getSessionTitle(),
+                request.getMessage(),
+                noEvidenceMessage,
+                List.of()
+        );
+    }
+
+    private boolean isReliableEvidence(PaperRetrievalSearchService.PaperRetrievalHit hit) {
+        return evidenceScore(hit) >= minimumEvidenceScore();
+    }
+
+    private double evidenceScore(PaperRetrievalSearchService.PaperRetrievalHit hit) {
+        if (hit == null) {
+            return 0.0d;
+        }
+        if (hit.rrfScore() != null && hit.rrfScore() > 0) {
+            return hit.rrfScore();
+        }
+        return hit.score() == null ? 0.0d : hit.score();
+    }
+
+    private double minimumEvidenceScore() {
+        return Math.max(0.0d, qaProperties.getMinimumEvidenceScore());
+    }
+
+    private int minimumEvidenceChunks() {
+        return Math.max(1, qaProperties.getMinimumEvidenceChunks());
     }
 
     private String buildGroundedUserMessage(String userMessage, String evidence) {

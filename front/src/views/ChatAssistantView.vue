@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Promotion, Setting } from '@element-plus/icons-vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { Check, CopyDocument, Promotion, Setting } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
@@ -41,12 +41,17 @@ interface QaWebSocketResponse {
 const isStreaming = ref(false)
 // 当 AI 正在思考时，显示“Thinking...”动画的消息 ID
 const thinkingMessageId = ref('')
+// 当前刚刚复制成功的助手消息 ID，用于让复制按钮短暂显示完成状态
+const copiedMessageId = ref('')
 // WebSocket 实例的引用
 const qaSocket = ref<WebSocket | null>(null)
+// 聊天滚动容器，用于发送新问题后把问题平滑滚到顶部附近
+const conversationShell = ref<HTMLElement | null>(null)
 // 用于确保 WebSocket 连接只建立一次的 Promise 任务
 const socketReadyTask = ref<Promise<WebSocket> | null>(null)
 // 当前正在接收流式内容的助手消息 ID
 let activeAssistantMessageId = ''
+let copiedMessageTimer: number | undefined
 
 // 计算属性：将原始消息列表中的 Markdown 内容渲染为 HTML，供模板直接使用 v-html
 // 遍历 messages，把里面原始的 Markdown 文本预先渲染成 HTML。
@@ -95,8 +100,9 @@ async function sendMessage() {
   const sessionTitle = chatSessions.ensureTitleFromQuestion(text)
 
   // 1. 将用户的提问消息添加到聊天记录中
+  const userMessageId = crypto.randomUUID()
   chatSessions.addMessage({
-    id: crypto.randomUUID(),
+    id: userMessageId,
     role: 'user',
     content: text,
   })
@@ -113,6 +119,7 @@ async function sendMessage() {
   isStreaming.value = true
   thinkingMessageId.value = assistantMessage.id
   activeAssistantMessageId = assistantMessage.id
+  void scrollMessageToTop(userMessageId)
 
   try {
     // 4. 确保 WebSocket 连接已建立并处于打开状态，然后发送用户消息
@@ -270,9 +277,69 @@ function closeQaSocket() {
   }
 }
 
+async function copyAssistantAnswer(message: ChatMessage) {
+  const content = message.content.trim()
+  if (!content) {
+    return
+  }
+
+  try {
+    await writeClipboardText(content)
+    copiedMessageId.value = message.id
+    window.clearTimeout(copiedMessageTimer)
+    copiedMessageTimer = window.setTimeout(() => {
+      if (copiedMessageId.value === message.id) {
+        copiedMessageId.value = ''
+      }
+    }, 1400)
+  } catch (error) {
+    console.error('Copy assistant answer failed', error)
+  }
+}
+
+async function writeClipboardText(content: string) {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    await navigator.clipboard.writeText(content)
+    return
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = content
+  textarea.setAttribute('readonly', 'true')
+  textarea.style.position = 'fixed'
+  textarea.style.top = '-9999px'
+  textarea.style.left = '-9999px'
+  document.body.appendChild(textarea)
+  textarea.select()
+  const copied = document.execCommand('copy')
+  document.body.removeChild(textarea)
+  if (!copied) {
+    throw new Error('浏览器拒绝复制到剪贴板')
+  }
+}
+
+async function scrollMessageToTop(messageId: string) {
+  await nextTick()
+  await new Promise((resolve) => window.requestAnimationFrame(resolve))
+  const container = conversationShell.value
+  const messageElement = container?.querySelector<HTMLElement>(`[data-message-id="${messageId}"]`)
+  if (!container || !messageElement) {
+    return
+  }
+
+  const containerTop = container.getBoundingClientRect().top
+  const messageTop = messageElement.getBoundingClientRect().top
+  const topOffset = window.matchMedia('(max-width: 860px)').matches ? 12 : 18
+  container.scrollTo({
+    top: container.scrollTop + messageTop - containerTop - topOffset,
+    behavior: 'smooth',
+  })
+}
+
 // 组件卸载前，移除事件监听器并关闭 WebSocket 连接
 onBeforeUnmount(() => {
   window.removeEventListener('scholarease:qa-session-switched', handleExternalSessionSwitch)
+  window.clearTimeout(copiedMessageTimer)
   closeQaSocket()
 })
 
@@ -356,6 +423,10 @@ function splitTableRow(line: string) { // 定义表格行拆分函数，参数 l
 function getLine(lines: string[], index: number) { // 定义安全取行函数，参数 lines 是行数组，index 是当前读取位置。
   return lines[index] ?? '' // 如果 index 越界或该位置不存在，就返回空字符串，避免严格模式下 undefined 报错。
 } // 安全取行函数结束。
+
+function isReferenceLine(line: string) {
+  return /^\[\d+]\s+/.test(line.trim())
+}
 
 function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定义轻量 Markdown 渲染器，参数 markdown 是待展示的原始 Markdown 文本。
   const lines = markdown.trim().split(/\r?\n/) // 去掉首尾空白后按换行切分，兼容 Windows 的 \r\n 和 Unix 的 \n。
@@ -497,6 +568,22 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
       continue // 无序列表已经处理完，进入下一轮主循环。
     } // 无序列表处理分支结束。
 
+    if (isReferenceLine(trimmed)) {
+      const referenceLines: string[] = []
+
+      while (index < lines.length && isReferenceLine(getLine(lines, index))) {
+        referenceLines.push(getLine(lines, index).trim())
+        index += 1
+      }
+
+      html.push(
+        `<div class="reference-list">${referenceLines
+          .map((referenceLine) => `<p>${renderInline(referenceLine, citations)}</p>`)
+          .join('')}</div>`,
+      )
+      continue
+    }
+
     const paragraphLines: string[] = [] // 如果当前行不属于上述语法，就准备按普通段落收集连续文本。
 
     while ( // 开始收集普通段落，直到遇到空行或新的块级 Markdown 语法。
@@ -508,7 +595,8 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
       !getLine(lines, index).trim().startsWith('$$') && // 条件 6：遇到块级公式语法时停止，交给公式分支处理。
       !/^\d+\.\s+/.test(getLine(lines, index).trim()) && // 条件 7：遇到有序列表语法时停止，交给有序列表分支处理。
       !/^[-*]\s+/.test(getLine(lines, index).trim()) && // 条件 8：遇到无序列表语法时停止，交给无序列表分支处理。
-      !( // 条件 9：遇到表格表头加分隔行时停止，交给表格分支处理。
+      !isReferenceLine(getLine(lines, index)) && // 条件 9：遇到参考文献行时停止，交给参考文献分支逐条换行。
+      !( // 条件 10：遇到表格表头加分隔行时停止，交给表格分支处理。
         getLine(lines, index).trim().includes('|') && // 表格判断子条件：当前行包含竖线。
         index + 1 < lines.length && // 表格判断子条件：下一行存在。
         isTableDivider(getLine(lines, index + 1)) // 表格判断子条件：下一行是表格分隔行。
@@ -529,7 +617,6 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
   <section class="chat-workspace">
     <!-- 顶部工具栏展示当前模型，并提供模型设置入口。 -->
     <div class="chat-toolbar">
-      <div class="active-session-pill">{{ activeSessionTitle }}</div>
       <div class="model-pill">
         <span>{{ modelSettings.providerLabel }}</span>
         <strong>{{ modelSettings.modelName }}</strong>
@@ -544,25 +631,49 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
       </el-tooltip>
     </div>
 
-    <div class="conversation-shell">
-      <div class="messages-container">
+    <div class="active-session-pill">{{ activeSessionTitle }}</div>
+
+    <div ref="conversationShell" class="conversation-shell">
+      <div class="messages-container" :class="{ 'has-active-stream': isStreaming }">
         <article
           v-for="message in renderedMessages"
           :key="message.id"
+          :data-message-id="message.id"
           class="message-row"
           :class="message.role === 'user' ? 'is-user' : 'is-assistant'"
         >
-          <div class="message-bubble markdown-body">
-            <div
-              v-if="message.id === thinkingMessageId && !message.content"
-              class="thinking-indicator"
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-              <em>Thinking</em>
+          <div class="message-stack">
+            <div class="message-bubble markdown-body">
+              <div
+                v-if="message.id === thinkingMessageId && !message.content"
+                class="thinking-indicator"
+              >
+                <span></span>
+                <span></span>
+                <span></span>
+                <em>Thinking</em>
+              </div>
+              <div v-else v-html="message.renderedContent"></div>
             </div>
-            <div v-else v-html="message.renderedContent"></div>
+            <div
+              v-if="message.role === 'assistant' && message.content.trim()"
+              class="message-actions"
+            >
+              <el-tooltip
+                :content="copiedMessageId === message.id ? '已复制' : '复制回答'"
+                placement="bottom"
+              >
+                <el-button
+                  class="copy-answer-button"
+                  :class="{ 'is-copied': copiedMessageId === message.id }"
+                  :icon="copiedMessageId === message.id ? Check : CopyDocument"
+                  circle
+                  size="small"
+                  :aria-label="copiedMessageId === message.id ? '已复制回答' : '复制回答'"
+                  @click="copyAssistantAnswer(message)"
+                />
+              </el-tooltip>
+            </div>
           </div>
         </article>
       </div>
@@ -620,14 +731,6 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
   gap: 10px;
 }
 
-.active-session-pill {
-  overflow: hidden;
-  max-width: 280px;
-  color: #6f675b;
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 /* 当前模型展示胶囊：左侧是供应商/预设，右侧是实际模型名。 */
 .model-pill {
@@ -665,10 +768,24 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
 
 /* 中间会话滚动区，底部留出输入框高度，防止最后一条消息被遮住。 */
 .conversation-shell {
+  position: relative;
   height: 100vh;
   overflow-y: auto;
   padding: 80px 28px 220px;
   scrollbar-color: #cfc4b4 transparent;
+}
+
+.active-session-pill {
+  position: absolute;
+  top: 18px;
+  left: 28px;
+  z-index: 3;
+  overflow: hidden;
+  max-width: calc(100% - 380px);
+  color: #6f675b;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 消息区域约束最大宽度，保证宽屏下阅读行长不会太长。 */
@@ -676,6 +793,12 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
   width: min(100%, 1040px);
   min-height: calc(100vh - 300px);
   margin-inline: auto;
+}
+
+.messages-container.has-active-stream::after {
+  display: block;
+  height: calc(100vh - 190px);
+  content: '';
 }
 
 /* 消息行负责左右对齐；用户消息靠右，助手消息靠左。 */
@@ -693,15 +816,30 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
   justify-content: flex-start;
 }
 
-.message-bubble {
+.message-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   max-width: min(760px, 78%);
+}
+
+.message-row.is-user .message-stack {
+  align-items: flex-end;
+  max-width: min(680px, 72%);
+}
+
+.message-row.is-assistant .message-stack {
+  max-width: min(820px, 82%);
+}
+
+.message-bubble {
+  max-width: 100%;
   padding: 12px 16px;
   border-radius: 18px;
   line-height: 1.7;
 }
 
 .message-row.is-user .message-bubble {
-  max-width: min(680px, 72%);
   border-radius: 18px 18px 6px 18px;
   background: #26392f;
   color: #fffdf7;
@@ -710,10 +848,43 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
 }
 
 .message-row.is-assistant .message-bubble {
-  max-width: min(820px, 82%);
   background: transparent;
   color: #1d2a23;
   font-size: 16px;
+}
+
+.message-actions {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 2px;
+  padding-left: 8px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.message-row.is-assistant:hover .message-actions,
+.message-actions:focus-within {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.copy-answer-button {
+  --el-button-bg-color: rgba(247, 243, 234, 0.82);
+  --el-button-border-color: #ded6ca;
+  --el-button-hover-bg-color: #fffaf0;
+  --el-button-hover-border-color: #d9c894;
+  --el-button-active-bg-color: #f0eadf;
+  --el-button-active-border-color: #d9c894;
+  color: #6f675b;
+}
+
+.copy-answer-button:hover,
+.copy-answer-button.is-copied {
+  color: #26392f;
 }
 
 /* Markdown 内容的基础字号，具体元素样式在下面按标签细分。 */
@@ -913,6 +1084,15 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
   white-space: nowrap;
 }
 
+.markdown-body :deep(.reference-list) {
+  margin: 0.8em 0 1.1em;
+}
+
+.markdown-body :deep(.reference-list p) {
+  margin: 0.35em 0;
+  line-height: 1.65;
+}
+
 .markdown-body :deep(pre) {
   margin: 1em 0 0;
   overflow-x: auto;
@@ -1012,8 +1192,18 @@ function renderMarkdown(markdown: string, citations: QaCitation[] = []) { // 定
   }
 
   .message-bubble {
-    max-width: 88%;
     border-radius: 20px;
+  }
+
+  .message-stack,
+  .message-row.is-user .message-stack,
+  .message-row.is-assistant .message-stack {
+    max-width: 88%;
+  }
+
+  .message-actions {
+    opacity: 1;
+    transform: none;
   }
 
   .composer-wrap {
