@@ -23,10 +23,22 @@ const { currentSessionId, isLoaded, sessions } = storeToRefs(chatSessions)
 const collapsed = ref(false)
 const historyExpanded = ref(true)
 
+interface SessionSwitchDetail {
+  previousSessionId: string
+  nextSessionId: string
+}
+
 const sidebarWidth = computed(() => (collapsed.value ? '72px' : '268px'))
 
-function notifySessionSwitch() {
-  window.dispatchEvent(new CustomEvent('scholarease:qa-session-switched'))
+function notifySessionSwitch(previousSessionId: string, nextSessionId: string) {
+  if (previousSessionId === nextSessionId) {
+    return
+  }
+  window.dispatchEvent(
+    new CustomEvent<SessionSwitchDetail>('scholarease:qa-session-switched', {
+      detail: { previousSessionId, nextSessionId },
+    }),
+  )
 }
 
 onMounted(() => {
@@ -34,23 +46,26 @@ onMounted(() => {
 })
 
 async function createChatSession() {
-  await chatSessions.createSession()
-  notifySessionSwitch()
+  const previousSessionId = currentSessionId.value
+  const nextSessionId = await chatSessions.createSession()
+  notifySessionSwitch(previousSessionId, nextSessionId)
   router.push({ name: 'chat' })
 }
 
 async function switchChatSession(sessionId: string) {
-  if (sessionId !== currentSessionId.value) {
+  const previousSessionId = currentSessionId.value
+  if (sessionId !== previousSessionId) {
     await chatSessions.switchSession(sessionId)
-    notifySessionSwitch()
+    notifySessionSwitch(previousSessionId, sessionId)
   }
   router.push({ name: 'chat' })
 }
 
 async function deleteChatSession(sessionId: string) {
+  const previousSessionId = currentSessionId.value
   const wasActiveSession = await chatSessions.deleteSession(sessionId)
   if (wasActiveSession) {
-    notifySessionSwitch()
+    notifySessionSwitch(previousSessionId, currentSessionId.value)
     router.push({ name: 'chat' })
   }
 }

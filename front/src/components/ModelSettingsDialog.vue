@@ -83,7 +83,7 @@ const activeModelName = computed({
           <el-input-number
             v-model="modelSettings.maxTokens"
             :min="1"
-            :step="512"
+            :step="1024"
             controls-position="right"
           />
         </el-form-item>
@@ -96,7 +96,7 @@ const activeModelName = computed({
           <el-input-number
             v-model="modelSettings.timeoutSeconds"
             :min="1"
-            :step="10"
+            :step="30"
             controls-position="right"
           >
             <template #suffix>秒</template>

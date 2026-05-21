@@ -34,6 +34,9 @@ public class QueryTranslationService {
     private final QaProperties qaProperties;
 
     public QueryRewriteResult rewrite(String userMessage, StreamingChatModel chatModel) {
+        if (!qaProperties.isRewriteEnabled()) {
+            return fallbackRewrite(userMessage);
+        }
         try {
             return rewriteByStreamingModel(userMessage, chatModel);
         } catch (Exception exception) {

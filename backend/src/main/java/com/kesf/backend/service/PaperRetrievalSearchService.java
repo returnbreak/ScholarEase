@@ -16,6 +16,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -62,23 +64,39 @@ public class PaperRetrievalSearchService {
         if (query == null || !StringUtils.hasText(query.vectorQuery())) {
             return List.of();
         }
-        // 1. 发起向量语义召回
-        List<PaperRetrievalHit> vectorHits = searchByVector(
-                query.vectorQuery(),
-                qaProperties.getVectorTopK(),
-                qaProperties.getVectorNumCandidates()
+        CompletableFuture<List<PaperRetrievalHit>> vectorFuture = CompletableFuture.supplyAsync(() ->
+                searchByVector(
+                        query.vectorQuery(),
+                        qaProperties.getVectorTopK(),
+                        qaProperties.getVectorNumCandidates()
+                )
         );
-        // 2. 发起 BM25 关键词召回
-        List<PaperRetrievalHit> bm25Hits = searchByBm25(
-                query.bm25QueryText(),
-                query.exactTerms(),
-                qaProperties.getBm25TopK()
+        CompletableFuture<List<PaperRetrievalHit>> bm25Future = CompletableFuture.supplyAsync(() ->
+                searchByBm25(
+                        query.bm25QueryText(),
+                        query.exactTerms(),
+                        qaProperties.getBm25TopK()
+                )
         );
+        List<PaperRetrievalHit> vectorHits = joinRetrieval("vector", vectorFuture);
+        List<PaperRetrievalHit> bm25Hits = joinRetrieval("BM25", bm25Future);
         // 3. 使用 RRF 倒数排名融合算法，将两路结果依据排名进行合并打分
         List<PaperRetrievalHit> merged = mergeByRrf(vectorHits, bm25Hits);
         // 4. 截断保留得分最高的前 Top-K 个结果
         int limit = Math.max(1, qaProperties.getMergedTopK());
         return merged.stream().limit(limit).toList();
+    }
+
+    private List<PaperRetrievalHit> joinRetrieval(String source, CompletableFuture<List<PaperRetrievalHit>> future) {
+        try {
+            return future.join();
+        } catch (CompletionException exception) {
+            Throwable cause = exception.getCause() == null ? exception : exception.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new IllegalStateException("Paper " + source + " retrieval failed: " + cause.getMessage(), cause);
+        }
     }
 
     /**

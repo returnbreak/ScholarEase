@@ -23,6 +23,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -78,10 +79,11 @@ public class QaAgentService {
             
             List<ChatMessage> messages = new ArrayList<>();
             messages.add(SystemMessage.from(systemPrompt()));
-            messages.addAll(memory.messages());
+            messages.addAll(validMessages(memory.messages()));
             messages.add(UserMessage.from(groundedUserMessage));
 
             StringBuilder answerBuffer = new StringBuilder();
+            AtomicBoolean streamFinished = new AtomicBoolean(false);
             streamingChatModel.chat(messages, new StreamingChatResponseHandler() {
                 @Override
                 public void onPartialResponse(String token) {
@@ -91,16 +93,19 @@ public class QaAgentService {
 
                 @Override
                 public void onCompleteResponse(ChatResponse response) {
+                    if (!streamFinished.compareAndSet(false, true)) {
+                        return;
+                    }
                     memory.add(UserMessage.from(request.getMessage()));
-                    AiMessage aiMessage = response.aiMessage() == null
-                            ? AiMessage.from(answerBuffer.toString())
-                            : response.aiMessage();
-                    memory.add(aiMessage);
+                    AiMessage aiMessage = validAiMessage(response.aiMessage(), answerBuffer.toString());
+                    if (aiMessage != null) {
+                        memory.add(aiMessage);
+                    }
                     qaSessionService.recordExchange(
                             sessionId,
                             request.getSessionTitle(),
                             request.getMessage(),
-                            aiMessage.text(),
+                            aiMessage == null ? answerBuffer.toString() : aiMessage.text(),
                             citations
                     );
                     sender.accept(QaWebSocketResponse.completion(metadata));
@@ -108,14 +113,64 @@ public class QaAgentService {
 
                 @Override
                 public void onError(Throwable error) {
+                    if (!streamFinished.compareAndSet(false, true)) {
+                        return;
+                    }
+                    if (isUpstreamStreamClosed(error) && StringUtils.hasText(answerBuffer)) {
+                        log.warn("QA upstream stream closed after partial response, qaTraceId={}", qaTraceId, error);
+                        completeInterruptedStream(request, sender, sessionId, metadata, citations, memory, answerBuffer);
+                        return;
+                    }
                     log.error("QA stream failed, qaTraceId={}", qaTraceId, error);
-                    sender.accept(QaWebSocketResponse.error(error.getMessage()));
+                    sender.accept(QaWebSocketResponse.error(safeErrorMessage(error)));
                 }
             });
         } catch (Exception exception) {
             log.error("QA stream preparation failed, qaTraceId={}", qaTraceId, exception);
-            sender.accept(QaWebSocketResponse.error(exception.getMessage()));
+            sender.accept(QaWebSocketResponse.error(safeErrorMessage(exception)));
         }
+    }
+
+    private void completeInterruptedStream(QaChatStreamRequest request,
+                                           Consumer<QaWebSocketResponse> sender,
+                                           String sessionId,
+                                           QaStreamMetadataDTO metadata,
+                                           List<QaCitationDTO> citations,
+                                           ChatMemory memory,
+                                           StringBuilder answerBuffer) {
+        String interruptionNotice = "\n\n回答生成中断，请稍后重试。";
+        answerBuffer.append(interruptionNotice);
+        sender.accept(QaWebSocketResponse.token(interruptionNotice));
+        String finalAnswer = answerBuffer.toString();
+        memory.add(UserMessage.from(request.getMessage()));
+        memory.add(AiMessage.from(finalAnswer));
+        qaSessionService.recordExchange(
+                sessionId,
+                request.getSessionTitle(),
+                request.getMessage(),
+                finalAnswer,
+                citations
+        );
+        sender.accept(QaWebSocketResponse.completion(metadata));
+    }
+
+    private boolean isUpstreamStreamClosed(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && "closed".equalsIgnoreCase(message.trim())) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private String safeErrorMessage(Throwable error) {
+        if (isUpstreamStreamClosed(error)) {
+            return "模型流式连接提前关闭，请重试。";
+        }
+        return StringUtils.hasText(error.getMessage()) ? error.getMessage() : "问答生成失败，请重试。";
     }
 
     private void sendNoEvidenceResponse(QaChatStreamRequest request,
@@ -164,6 +219,33 @@ public class QaAgentService {
 
     private int minimumEvidenceChunks() {
         return Math.max(1, qaProperties.getMinimumEvidenceChunks());
+    }
+
+    private List<ChatMessage> validMessages(List<ChatMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return List.of();
+        }
+        return messages.stream()
+                .filter(this::isValidMessage)
+                .toList();
+    }
+
+    private boolean isValidMessage(ChatMessage message) {
+        if (message instanceof AiMessage aiMessage) {
+            return StringUtils.hasText(aiMessage.text()) || aiMessage.hasToolExecutionRequests();
+        }
+        return message != null;
+    }
+
+    private AiMessage validAiMessage(AiMessage responseMessage, String fallbackText) {
+        if (responseMessage != null
+                && (StringUtils.hasText(responseMessage.text()) || responseMessage.hasToolExecutionRequests())) {
+            return responseMessage;
+        }
+        if (StringUtils.hasText(fallbackText)) {
+            return AiMessage.from(fallbackText);
+        }
+        return null;
     }
 
     private String buildGroundedUserMessage(String userMessage, String evidence) {

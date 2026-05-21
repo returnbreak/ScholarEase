@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,6 +23,8 @@ class OpenAiCompatibleEmbeddingClientTests {
     private HttpServer server;
     private String capturedRequestBody;
     private String capturedAuthorization;
+    private final AtomicInteger activeRequests = new AtomicInteger();
+    private final AtomicInteger maxActiveRequests = new AtomicInteger();
 
     @AfterEach
     void stopServer() {
@@ -56,22 +60,55 @@ class OpenAiCompatibleEmbeddingClientTests {
         assertThat(request.has("dimension")).isFalse();
     }
 
+    @Test
+    void embedProcessesBatchesConcurrentlyWhenConcurrencyIsConfigured() throws Exception {
+        startEmbeddingServer();
+
+        EmbeddingProperties properties = new EmbeddingProperties();
+        properties.setUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/v1/openai");
+        properties.setKey("test-key");
+        properties.setModel("BAAI/bge-m3");
+        properties.setBatchSize(1);
+        properties.setMaxConcurrency(2);
+        properties.setTimeoutSeconds(5);
+
+        OpenAiCompatibleEmbeddingClient client = new OpenAiCompatibleEmbeddingClient(properties, objectMapper);
+
+        List<float[]> vectors = client.embed(List.of("text-1", "text-2", "text-3"));
+
+        assertThat(vectors).hasSize(3);
+        assertThat(maxActiveRequests.get()).isGreaterThanOrEqualTo(2);
+    }
+
     private void startEmbeddingServer() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.setExecutor(Executors.newCachedThreadPool());
         server.createContext("/v1/openai/embeddings", exchange -> {
-            capturedAuthorization = exchange.getRequestHeaders().getFirst("Authorization");
-            capturedRequestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            byte[] response = """
-                    {
-                      "data": [
-                        {"embedding": [0.1, 0.2, 0.3]}
-                      ]
+            int active = activeRequests.incrementAndGet();
+            maxActiveRequests.updateAndGet(current -> Math.max(current, active));
+            try {
+                capturedAuthorization = exchange.getRequestHeaders().getFirst("Authorization");
+                capturedRequestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                Thread.sleep(150);
+                JsonNode input = objectMapper.readTree(capturedRequestBody).get("input");
+                StringBuilder data = new StringBuilder();
+                for (int i = 0; i < input.size(); i++) {
+                    if (i > 0) {
+                        data.append(",");
                     }
-                    """.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, response.length);
-            exchange.getResponseBody().write(response);
-            exchange.close();
+                    data.append("{\"embedding\":[0.1,0.2,0.3]}");
+                }
+                byte[] response = ("{\"data\":[" + data + "]}").getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                exchange.getResponseBody().write(response);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IOException(exception);
+            } finally {
+                activeRequests.decrementAndGet();
+                exchange.close();
+            }
         });
         server.start();
     }

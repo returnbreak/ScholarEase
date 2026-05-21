@@ -18,6 +18,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * OpenAI-compatible Embedding 客户端。
@@ -68,13 +74,71 @@ public class OpenAiCompatibleEmbeddingClient implements EmbeddingClient {
         }
 
         int batchSize = Math.max(1, properties.getBatchSize());
+        int maxConcurrency = Math.max(1, properties.getMaxConcurrency());
+        if (maxConcurrency == 1 || texts.size() <= batchSize) {
+            return embedSequentially(texts, batchSize);
+        }
+
+        List<List<String>> batches = batches(texts, batchSize);
+        ExecutorService executorService = Executors.newFixedThreadPool(
+                Math.min(maxConcurrency, batches.size()),
+                embeddingThreadFactory()
+        );
+        try {
+            List<CompletableFuture<List<float[]>>> futures = batches.stream()
+                    .map(batch -> CompletableFuture.supplyAsync(
+                            () -> parseVectors(callApiOnce(batch)),
+                            executorService
+                    ))
+                    .toList();
+            List<float[]> vectors = new ArrayList<>(texts.size());
+            for (CompletableFuture<List<float[]>> future : futures) {
+                vectors.addAll(joinBatch(future));
+            }
+            return vectors;
+        } finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    private List<float[]> embedSequentially(List<String> texts, int batchSize) {
         List<float[]> vectors = new ArrayList<>(texts.size());
         for (int start = 0; start < texts.size(); start += batchSize) {
             int end = Math.min(start + batchSize, texts.size());
             List<String> batch = texts.subList(start, end);
-            vectors.addAll(parseVectors(callApiOnce(batch))); // 逐批调用 API 并解析
+            vectors.addAll(parseVectors(callApiOnce(batch)));
         }
         return vectors;
+    }
+
+    private List<List<String>> batches(List<String> texts, int batchSize) {
+        List<List<String>> batches = new ArrayList<>();
+        for (int start = 0; start < texts.size(); start += batchSize) {
+            int end = Math.min(start + batchSize, texts.size());
+            batches.add(texts.subList(start, end));
+        }
+        return batches;
+    }
+
+    private List<float[]> joinBatch(CompletableFuture<List<float[]>> future) {
+        try {
+            return future.join();
+        } catch (CompletionException exception) {
+            Throwable cause = exception.getCause() == null ? exception : exception.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new IllegalStateException("Embedding API batch failed: " + cause.getMessage(), cause);
+        }
+    }
+
+    private ThreadFactory embeddingThreadFactory() {
+        AtomicInteger index = new AtomicInteger(1);
+        return runnable -> {
+            Thread thread = new Thread(runnable, "embedding-batch-" + index.getAndIncrement());
+            thread.setDaemon(true);
+            return thread;
+        };
     }
 
     /**

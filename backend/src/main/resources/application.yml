@@ -64,16 +64,17 @@ scholarease:
       paperVectorIndex: paper-vector-index-topic
   qa:
     enabled: true
+    rewriteEnabled: ${QA_REWRITE_ENABLED:false}
     chat:
       baseUrl: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       apiKey: ${DEEPSEEK_API_KEY:${QA_STREAMING_CHAT_API_KEY:}}
       modelName: ${DEEPSEEK_MODEL_NAME:deepseek-v4-pro}
       temperature: ${DEEPSEEK_TEMPERATURE:${QA_STREAMING_CHAT_TEMPERATURE:0.2}}
       topP: ${DEEPSEEK_TOP_P:0.9}
-      timeoutSeconds: ${DEEPSEEK_TIMEOUT_SECONDS:60}
+      timeoutSeconds: ${DEEPSEEK_TIMEOUT_SECONDS:600}
       modelMaxTokens:
-        deepseek-v4-pro: ${DEEPSEEK_V4_PRO_MAX_TOKENS:8192}
-        deepseek-v4-flash: ${DEEPSEEK_V4_FLASH_MAX_TOKENS:4096}
+        deepseek-v4-pro: ${DEEPSEEK_V4_PRO_MAX_TOKENS:16384}
+        deepseek-v4-flash: ${DEEPSEEK_V4_FLASH_MAX_TOKENS:8192}
     historyRecentTurns: ${QA_HISTORY_RECENT_TURNS:20}
     redisSessionTtlDays: ${QA_REDIS_SESSION_TTL_DAYS:30}
     vectorTopK: ${QA_VECTOR_TOP_K:40}
@@ -169,6 +170,7 @@ embedding:
     key: ${DEEPINFRA_API_TOKEN:${EMBEDDING_API_KEY:}}
     model: ${EMBEDDING_API_MODEL:BAAI/bge-m3}
     batch-size: ${EMBEDDING_API_BATCH_SIZE:10}
+    max-concurrency: ${EMBEDDING_API_MAX_CONCURRENCY:2}
     dimension: ${EMBEDDING_API_DIMENSION:1024}
     timeout-seconds: ${EMBEDDING_API_TIMEOUT_SECONDS:30}
 

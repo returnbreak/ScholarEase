@@ -17,8 +17,8 @@ type ModelOption = {
 }
 
 const modelOptions: ModelOption[] = [
-  { name: 'deepseek-v4-pro', maxTokens: 8192 },
-  { name: 'deepseek-v4-flash', maxTokens: 4096 },
+  { name: 'deepseek-v4-pro', maxTokens: 16384 },
+  { name: 'deepseek-v4-flash', maxTokens: 8192 },
 ]
 
 export const useModelSettingsStore = defineStore('modelSettings', () => {
@@ -27,8 +27,8 @@ export const useModelSettingsStore = defineStore('modelSettings', () => {
   const modelName = ref('deepseek-v4-pro')
   const temperature = ref(0.2)
   const topP = ref(0.9)
-  const maxTokens = ref(8192)
-  const timeoutSeconds = ref(60)
+  const maxTokens = ref(16384)
+  const timeoutSeconds = ref(600)
 
   const providerLabel = 'DeepSeek'
   const description = 'DeepSeek OpenAI-compatible streaming chat configuration.'
@@ -36,7 +36,7 @@ export const useModelSettingsStore = defineStore('modelSettings', () => {
 
   function updateModelName(nextModelName: string) {
     modelName.value = nextModelName
-    maxTokens.value = modelOptions.find((model) => model.name === nextModelName)?.maxTokens ?? 4096
+    maxTokens.value = modelOptions.find((model) => model.name === nextModelName)?.maxTokens ?? 8192
   }
 
   function toRequestConfig(): QaModelConfig {

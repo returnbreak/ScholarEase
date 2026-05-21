@@ -47,6 +47,7 @@ class QaPropertiesTests {
         StandardEnvironment environment = new StandardEnvironment();
         environment.getPropertySources().addFirst(new MapPropertySource("test", Map.ofEntries(
                 entry("scholarease.qa.history-recent-turns", "12"),
+                entry("scholarease.qa.rewrite-enabled", "true"),
                 entry("scholarease.qa.redis-session-ttl-days", "14"),
                 entry("scholarease.qa.vector-top-k", "30"),
                 entry("scholarease.qa.vector-num-candidates", "180"),
@@ -78,6 +79,7 @@ class QaPropertiesTests {
 
         // 3. 验证检索参数绑定正确
         assertThat(properties.getHistoryRecentTurns()).isEqualTo(12);
+        assertThat(properties.isRewriteEnabled()).isTrue();
         assertThat(properties.getRedisSessionTtlDays()).isEqualTo(14);
         assertThat(properties.getVectorTopK()).isEqualTo(30);
         assertThat(properties.getVectorNumCandidates()).isEqualTo(180);
@@ -122,5 +124,15 @@ class QaPropertiesTests {
                 .doesNotContain("没有检索到");
         assertThat(properties.getPrompts().getNoEvidenceMessage())
                 .contains("暂时无法回答");
+    }
+
+    @Test
+    void chatDefaultsAllowLongerStreamingAnswers() {
+        QaProperties properties = new QaProperties();
+
+        assertThat(properties.getChat().getTimeoutSeconds()).isEqualTo(600);
+        assertThat(properties.getChat().resolveMaxTokens()).isEqualTo(16384);
+        assertThat(properties.getChat().getModelMaxTokens())
+                .containsEntry("deepseek-v4-flash", 8192);
     }
 }

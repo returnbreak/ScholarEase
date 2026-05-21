@@ -28,6 +28,9 @@ public class EmbeddingProperties {
     /** 单次 API 调用最多处理的文本条数，超出的文本会自动分批 */
     private int batchSize = 10;
 
+    /** Embedding 分批调用的最大并发数；调高可提升入库速度，但会增加 API 限流风险。 */
+    private int maxConcurrency = 2;
+
     /** 输出向量维度（需与所选模型支持的维度一致） */
     private int dimension = 1024;
 

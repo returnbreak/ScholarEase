@@ -32,6 +32,11 @@ public class QaProperties {
     private boolean enabled = true;
 
     /**
+     * 是否调用 LLM 做 query rewrite。关闭时直接使用本地 fallback query，少一次模型请求以降低问答首 token 延迟。
+     */
+    private boolean rewriteEnabled = false;
+
+    /**
      * 对话历史保留的最近轮次数。
      * 每轮包含一次用户提问和一次助手回答，用于构建多轮对话的上下文窗口。
      * 默认保留最近 20 轮。
@@ -226,7 +231,7 @@ public class QaProperties {
 
         private Double topP = 0.9;
 
-        private Integer timeoutSeconds = 60;
+        private Integer timeoutSeconds = 600;
 
         /**
          * 各模型与其最大输出 Token 数的映射关系。
@@ -235,25 +240,25 @@ public class QaProperties {
          *
          * 预置了两种 DeepSeek 模型：
          * <ul>
-         *   <li>deepseek-v4-pro：8192 tokens（旗舰模型，适用于复杂推理）</li>
-         *   <li>deepseek-v4-flash：4096 tokens（轻量模型，适用于快速响应）</li>
+         *   <li>deepseek-v4-pro：16384 tokens（旗舰模型，适用于复杂推理和长回答）</li>
+         *   <li>deepseek-v4-flash：8192 tokens（轻量模型，适用于快速响应）</li>
          * </ul>
          */
         private Map<String, Integer> modelMaxTokens = new LinkedHashMap<>(Map.of(
-                "deepseek-v4-pro", 8192,
-                "deepseek-v4-flash", 4096
+                "deepseek-v4-pro", 16384,
+                "deepseek-v4-flash", 8192
         ));
 
         /**
          * 根据当前配置的 {@code modelName} 解析对应的最大 Token 数。
          *
          * 查找逻辑：从 {@link #modelMaxTokens} 映射中查找当前模型名称对应的 Token 上限；
-         * 若未找到，则回退到默认值 4096，保证在任何情况下都有一个合理的 Token 限制。
+         * 若未找到，则回退到默认值 8192，保证在任何情况下都有一个合理的 Token 限制。
          *
          * @return 当前模型的最大输出 Token 数
          */
         public int resolveMaxTokens() {
-            return modelMaxTokens.getOrDefault(modelName, 4096);
+            return modelMaxTokens.getOrDefault(modelName, 8192);
         }
     }
 }

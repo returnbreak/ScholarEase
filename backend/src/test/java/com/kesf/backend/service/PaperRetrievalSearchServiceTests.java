@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -129,6 +132,49 @@ class PaperRetrievalSearchServiceTests {
         assertThat(hits.get(0).rrfScore()).isGreaterThan(0);
     }
 
+    @Test
+    void hybridSearchRunsVectorAndBm25RecallConcurrently() {
+        PaperRetrievalSearchService service = new PaperRetrievalSearchService(
+                mock(ElasticsearchClient.class),
+                mock(EmbeddingClient.class),
+                new ScholarEaseElasticsearchProperties(),
+                new QaProperties()
+        ) {
+            private final CountDownLatch bm25Started = new CountDownLatch(1);
+            private final AtomicBoolean bm25WasStartedWhileVectorWaited = new AtomicBoolean(false);
+
+            @Override
+            public List<PaperRetrievalHit> searchByVector(String query, int topK, int numCandidates) {
+                try {
+                    bm25WasStartedWhileVectorWaited.set(bm25Started.await(300, TimeUnit.MILLISECONDS));
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                }
+                assertThat(bm25WasStartedWhileVectorWaited).isTrue();
+                return List.of(hit(document("v1", "paper-a", 1, "semantic hit"),
+                        RetrievalSource.VECTOR, 1, null));
+            }
+
+            @Override
+            public List<PaperRetrievalHit> searchByBm25(String queryText, List<String> exactTerms, int topK) {
+                bm25Started.countDown();
+                return List.of(hit(document("b1", "paper-b", 1, "keyword hit"),
+                        RetrievalSource.BM25, null, 1));
+            }
+        };
+
+        List<PaperRetrievalSearchService.PaperRetrievalHit> hits = service.searchHybrid(
+                new PaperRetrievalSearchService.RetrievalQuery(
+                        "中文问题",
+                        "english query",
+                        List.of("keyword"),
+                        List.of("keyword")
+                )
+        );
+
+        assertThat(hits).hasSize(2);
+    }
+
     private static PaperVectorDocument document(String id, String paperMd5, int chunkIndex, String rawText) {
         PaperVectorDocument document = new PaperVectorDocument();
         document.setId(id);
@@ -152,6 +198,23 @@ class PaperRetrievalSearchServiceTests {
                                 .source(document)
                         )
                 )
+        );
+    }
+
+    private static PaperRetrievalSearchService.PaperRetrievalHit hit(
+            PaperVectorDocument document,
+            PaperRetrievalSearchService.RetrievalSource source,
+            Integer vectorRank,
+            Integer bm25Rank
+    ) {
+        return new PaperRetrievalSearchService.PaperRetrievalHit(
+                document,
+                0.72d,
+                1,
+                source,
+                vectorRank,
+                bm25Rank,
+                0.0d
         );
     }
 }

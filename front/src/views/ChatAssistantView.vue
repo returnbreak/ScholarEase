@@ -37,6 +37,11 @@ interface QaWebSocketResponse {
   error?: string
 }
 
+interface QaSessionSwitchDetail {
+  previousSessionId?: string
+  nextSessionId?: string
+}
+
 // 标记当前是否正在进行流式输出
 const isStreaming = ref(false)
 // 当 AI 正在思考时，显示“Thinking...”动画的消息 ID
@@ -45,6 +50,7 @@ const thinkingMessageId = ref('')
 const copiedMessageId = ref('')
 // WebSocket 实例的引用
 const qaSocket = ref<WebSocket | null>(null)
+const socketSessionId = ref('')
 // 聊天滚动容器，用于发送新问题后把问题平滑滚到顶部附近
 const conversationShell = ref<HTMLElement | null>(null)
 // 用于确保 WebSocket 连接只建立一次的 Promise 任务
@@ -71,7 +77,18 @@ function resetStreamingState() {
 }
 
 // 处理外部触发的会话切换事件（例如侧边栏点击切换）
-function handleExternalSessionSwitch() {
+function handleExternalSessionSwitch(event: Event) {
+  const detail = (event as CustomEvent<QaSessionSwitchDetail>).detail
+  const previousSessionId = detail?.previousSessionId ?? ''
+  const nextSessionId = detail?.nextSessionId ?? ''
+
+  if (previousSessionId && nextSessionId && previousSessionId === nextSessionId) {
+    return
+  }
+  if (socketSessionId.value && nextSessionId && socketSessionId.value === nextSessionId) {
+    return
+  }
+
   resetStreamingState()
   closeQaSocket()
 }
@@ -123,7 +140,7 @@ async function sendMessage() {
 
   try {
     // 4. 确保 WebSocket 连接已建立并处于打开状态，然后发送用户消息
-    const socket = await ensureQaSocket()
+    const socket = await ensureQaSocket(currentSessionId)
     socket.send(
       JSON.stringify({
         sessionId: currentSessionId,
@@ -164,21 +181,32 @@ function qaWebSocketUrl() {
 }
 
 // 确保 WebSocket 连接处于打开状态，如果未连接则尝试建立新连接
-function ensureQaSocket() {
+function ensureQaSocket(sessionId: string) {
   const existing = qaSocket.value
   // 如果已存在打开的连接，直接返回该连接
-  if (existing?.readyState === WebSocket.OPEN) {
+  if (existing?.readyState === WebSocket.OPEN && socketSessionId.value === sessionId) {
     return Promise.resolve(existing)
   }
+  if (existing?.readyState === WebSocket.OPEN && !socketSessionId.value) {
+    socketSessionId.value = sessionId
+    return Promise.resolve(existing)
+  }
+  if (existing && socketSessionId.value && socketSessionId.value !== sessionId) {
+    closeQaSocket()
+  }
   // 如果有正在建立的连接任务，则返回该任务的 Promise
-  if (socketReadyTask.value) {
+  if (socketReadyTask.value && socketSessionId.value === sessionId) {
     return socketReadyTask.value
+  }
+  if (socketReadyTask.value) {
+    closeQaSocket()
   }
 
   // 否则，创建一个新的 Promise 来处理 WebSocket 连接的建立
   socketReadyTask.value = new Promise<WebSocket>((resolve, reject) => {
     const socket = new WebSocket(qaWebSocketUrl())
     qaSocket.value = socket
+    socketSessionId.value = sessionId
 
     // 连接成功建立时
     socket.onopen = () => {
@@ -208,6 +236,7 @@ function ensureQaSocket() {
       // 如果关闭的是当前活跃的 socket 实例，则清空引用
       if (qaSocket.value === socket) {
         qaSocket.value = null
+        socketSessionId.value = ''
       }
       socketReadyTask.value = null
       if (isStreaming.value && activeAssistantMessageId) {
@@ -249,12 +278,20 @@ function handleQaSocketMessage(event: MessageEvent) {
     setAssistantCitations(activeAssistantMessageId, payload.data?.citations ?? [])
   } else if (payload.type === 'error') {
     // 如果是 error 类型，处理错误
-    handleQaSocketError(payload.error ?? 'WebSocket 问答失败')
+    handleQaApplicationError(payload.error ?? 'WebSocket 问答失败')
   } else if (payload.type === 'completion') {
     // 如果是 completion 类型，重置流式状态，表示回答结束
     resetStreamingState()
     void chatSessions.refreshCurrentSession()
   }
+}
+
+// 处理后端返回的业务错误，连接本身仍然可以继续复用
+function handleQaApplicationError(message: string) {
+  if (activeAssistantMessageId) {
+    appendAssistantContent(activeAssistantMessageId, `\n\n${message}`)
+  }
+  resetStreamingState()
 }
 
 // 处理 WebSocket 相关的错误
@@ -271,6 +308,7 @@ function handleQaSocketError(message: string) {
 function closeQaSocket() {
   const socket = qaSocket.value
   qaSocket.value = null
+  socketSessionId.value = ''
   socketReadyTask.value = null
   if (socket && socket.readyState !== WebSocket.CLOSED && socket.readyState !== WebSocket.CLOSING) {
     socket.close()
